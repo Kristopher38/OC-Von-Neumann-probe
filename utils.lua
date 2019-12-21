@@ -58,10 +58,30 @@ function hasDuplicateValue(tab, value)
 	return false
 end
 
+function heuristicManhattan(fromNode, toNode)
+	return math.abs(fromNode.x - toNode.x) + 
+		   math.abs(fromNode.y - toNode.y) +
+		   math.abs(fromNode.z - toNode.z)
+end
+
+function cost(prevNode, fromNode, toNode) -- time-based cost function
+	local totalCost = 0
+	if math.abs(fromNode.x - toNode.x) > 0 and
+	   math.abs(fromNode.x - toNode.x) > 0 then
+		totalCost += 1
+	end
+	if map[toNode] == "minecraft:air" or map[toNode] < 0.5 then -- TODO: check hardness of different materials
+		totalCost += 1
+	else
+		totalCost += 2
+	end
+	return totalCost
+end
+
 function aStar(start, goal, heuristic)
-	openQueue = PriorityQueue()
-	cameFrom = VectorMap()
-	costSoFar = VectorMap()
+	local openQueue = PriorityQueue()
+	local cameFrom = VectorMap()
+	local costSoFar = VectorMap()
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
@@ -76,7 +96,7 @@ function aStar(start, goal, heuristic)
 		end
 		
 		for nextNode in neighbours(currentNode) do
-			local newCost = costSoFar[currentNode] + cost(currentNode, nextNode)
+			local newCost = costSoFar[currentNode] + cost(cameFrom[currentNode], currentNode, nextNode)
 			if cameFrom[nextNode] ~= nil or 
 			   newCost < costSoFar[currentNode] then
 				openQueue:put(nextNode, newCost + heuristic(currentNode, nextNode))

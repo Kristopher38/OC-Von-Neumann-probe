@@ -11,7 +11,7 @@ setmetatable(PriorityQueue, {__call = function(cls)
 end })
 
 function PriorityQueue:pop()
-	local maxNode = self.heap[1]
+	local minNode = self.heap[1].element
 	-- swap root node with the last node
 	self.endIndex = self.endIndex - 1
 	self.heap[1] = self.heap[self.endIndex]
@@ -41,7 +41,7 @@ function PriorityQueue:pop()
 		end
 		childIndex = 2 * parentIndex
 	end
-	return maxNode
+	return minNode
 end
 
 function PriorityQueue:put(_element, _priority)
@@ -63,7 +63,7 @@ function PriorityQueue:put(_element, _priority)
 end
 
 function PriorityQueue:top()
-	return self.heap[1]
+	return self.heap[1].element
 end
 
 function PriorityQueue:empty()
