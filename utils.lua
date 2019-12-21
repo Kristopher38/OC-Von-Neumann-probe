@@ -58,33 +58,51 @@ function hasDuplicateValue(tab, value)
 	return false
 end
 
+local function calcOrientation(fromNode, toNode, fromOrientation)
+	local dx = toNode.x - fromNode.x
+	local dy = toNode.y - fromNode.y
+	local dz = toNode.z - fromNode.z
+	if dx == -1 then
+		return sides.negx -- equivalent to sides.west
+	elseif dx == 1 then
+		return sides.posx -- equivalent to sides.east
+	elseif dz == -1 then
+		return sides.negz -- equivalent to sides.north
+	elseif dz == 1 then
+		return sides.posz -- equivalent to sides.south
+	elseif dy ~= 0 then
+		return fromOrientation
+end
+
 function heuristicManhattan(fromNode, toNode)
 	return math.abs(fromNode.x - toNode.x) + 
 		   math.abs(fromNode.y - toNode.y) +
 		   math.abs(fromNode.z - toNode.z)
 end
 
-function cost(prevNode, fromNode, toNode) -- time-based cost function
+function cost(fromNode, toNode, fromOrientation) -- time-based cost function
 	local totalCost = 0
-	if math.abs(fromNode.x - toNode.x) > 0 and
-	   math.abs(fromNode.x - toNode.x) > 0 then
-		totalCost += 1
+	if calcOrientation(fromNode, toNode, fromOrientation) ~= fromOrientation then
+		totalCost += 1 -- turning takes 0.45s
 	end
 	if map[toNode] == "minecraft:air" or map[toNode] < 0.5 then -- TODO: check hardness of different materials
-		totalCost += 1
+		totalCost += 1 -- moving takes 0.45s
 	else
-		totalCost += 2
+		totalCost += 2.555 -- mining takes 0.7s + 0.45s for moving = 1.15s = 2.(5) cost
 	end
 	return totalCost
 end
 
-function aStar(start, goal, heuristic)
+
+function aStar(start, startOrientation, goal, heuristic)
 	local openQueue = PriorityQueue()
 	local cameFrom = VectorMap()
 	local costSoFar = VectorMap()
+	local orientation = VectorMap()
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
+	orientation[start] = startOrientation
 	local currentNode
 	local nodePriority = 1
 	
@@ -96,12 +114,13 @@ function aStar(start, goal, heuristic)
 		end
 		
 		for nextNode in neighbours(currentNode) do
-			local newCost = costSoFar[currentNode] + cost(cameFrom[currentNode], currentNode, nextNode)
+			local newCost = costSoFar[currentNode] + cost(currentNode, nextNode, orientation[current])
 			if cameFrom[nextNode] ~= nil or 
 			   newCost < costSoFar[currentNode] then
 				openQueue:put(nextNode, newCost + heuristic(currentNode, nextNode))
 				costSoFar[nextNode] = newCost
 				cameFrom[nextNode] = currentNode
+				orientation[nextNode] = calcOrientation(currentNode, nextNode, orientation[current]) -- TODO: reduce call here since it's being called twice (first time in cost()) if condition is true
 			end
 		end	
 	end
