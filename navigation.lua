@@ -1,5 +1,7 @@
 local sides = require("sides")
 local robot = require("robot")
+local component = require("component")
+local geolyzer = component.geolyzer
 
 local vec3 = require("vec3")
 local PriorityQueue = require("priorityqueue")
@@ -51,6 +53,27 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation)
 	elseif dy ~= 0 then
 		return fromOrientation -- if we're moving vertically orientation stays the same
 	end
+end
+
+--[[ detect robot orientation using geolyzer as it always returns the scan() data in the same order
+independently of the robot orientation --]]
+function navigation.detectOrientation()
+    local orientationMappings = {[2] = sides.north, [4] = sides.west, [6] = sides.east, [8] = sides.south}
+    local firstScan = geolyzer.scan(-1, -1, 0, 3, 3, 1) -- scan 3x3x1 area with robot in the center
+
+    for i = 1,4 do -- try a maximum of 4 turns to try 4 different sides
+        if robot.swing() then
+            local secondScan = geolyzer.scan(-1, -1, 0, 3, 3, 1) -- second scan after destroying a block
+            for j = 2,8,2 do -- we're interested only in indexes 2, 4, 6 or 8 in scan() data as only those can change
+                if firstScan[j] ~= secondScan[j] then -- if data has changed that means it's the block we dug earlier
+                    return orientationMappings[j] -- return proper orientation based on the index that's changed
+                end
+            end
+        else
+            robot.turnRight() -- if we didn't dig anything try another side
+        end
+    end
+    error("Couldn't detect orientation, make sure the robot has at least one block horizontally around it")
 end
 
 --[[ returns six neighbouring blocks (nodes) that a block (node) has, 
