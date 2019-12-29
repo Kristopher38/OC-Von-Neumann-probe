@@ -13,11 +13,12 @@ glasses.startLinking("Kristopher38")
 glasses.setRenderPosition("absolute")
 local lookingAt = glasses.getUserLookingAt("Kristopher38")
 robot.position = vec3(lookingAt.x, lookingAt.y, lookingAt.z)
-robot.orientation = sides.west
+robot.orientation = nav.detectOrientation()
 
 glasses.removeAll()
 print("Mapping...")
-map.scanMap()
+map.scanMap(15, 15, 15)
+print("Mapped count", map.count)
 print("Finished mapping sorrounding area")
 while true do
 	local EVENT, ID, USER, PLAYER_POSITION_X, PLAYER_POSITION_Y, PLAYER_POSITION_Z, 
