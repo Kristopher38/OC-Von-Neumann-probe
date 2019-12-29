@@ -1,55 +1,10 @@
 local sides = require("sides")
-local PriorityQueue = require("priorityqueue")
-local VectorMap = require("vectormap")
+local computer = require("computer")
 
-local function vec3eq(a, b)
-	return a.x == b.x and a.y == b.y and a.z == b.z
-end
-
-local mt = {__eq = vec3eq}
-
--- constructs vector as a table with "x", "y", "z" keys from table of 3 coordinates or 3 coordinate arguments
-function vec3(_x, _y, _z)
-	local xx, yy, zz
-	if type(_x) == "table" then -- construct from table
-		xx = _x[1] or 0
-		yy = _x[2] or 0
-		zz = _x[3] or 0
-	else -- construct from three coordinates
-		xx = _x or 0
-		yy = _y or 0
-		zz = _z or 0
-	end
-	local vec = {x=xx, y=yy, z=zz}
-	setmetatable(vec, mt)
-	return vec
-end
-
---[[ Calculate coordinates from offset vector and orientation. coordsVec 
-is a base vector to which we "add" offsetVec, taking into account provided 
-facingSide. offsetVec is a vector with three fields:
-1. moving forward/backward - positive is forward, negative is backward
-2. moving up/down - positive is up, negative is down
-3. moving right/left - positive is right, negative is left --]]
-function coordsFromOffset(coordsVec, offsetVec, facingSide)
-	local y = coordsVec.y + offsetVec.y
-	
-	if facingSide == sides.posz then -- equivalent to sides.south
-		return vec3(coordsVec.x - offsetVec.z, y, coordsVec.z + offsetVec.x)
-	end
-	if facingSide == sides.negz then -- equivalent to sides.north
-		return vec3(coordsVec.x + offsetVec.z, y, coordsVec.z - offsetVec.x)
-	end
-	if facingSide == sides.posx then -- equivalent to sides.east
-		return vec3(coordsVec.x + offsetVec.x, y, coordsVec.z + offsetVec.z)
-	end
-	if facingSide == sides.negx then -- equivalent to sides.west
-		return vec3(coordsVec.x - offsetVec.x, y, coordsVec.z - offsetVec.z)
-	end
-end
+local utils = {}
 
 -- checks if element already exists in a table
-function hasDuplicateValue(tab, value)
+function utils.hasDuplicateValue(tab, value)
 	for index, element in ipairs(tab) do
 		if element == value then
 			return true
@@ -58,80 +13,30 @@ function hasDuplicateValue(tab, value)
 	return false
 end
 
-local function calcOrientation(fromNode, toNode, fromOrientation)
-	local dx = toNode.x - fromNode.x
-	local dy = toNode.y - fromNode.y
-	local dz = toNode.z - fromNode.z
-	if dx == -1 then
-		return sides.negx -- equivalent to sides.west
-	elseif dx == 1 then
-		return sides.posx -- equivalent to sides.east
-	elseif dz == -1 then
-		return sides.negz -- equivalent to sides.north
-	elseif dz == 1 then
-		return sides.posz -- equivalent to sides.south
-	elseif dy ~= 0 then
-		return fromOrientation
+--[[ measures how much time execution of a function took, returns
+function return value, real execution time and cpu execution time,
+and additionally prints execution times --]]
+function utils.timeIt(func, ...)
+	local realBefore, cpuBefore = computer.uptime(), os.clock()
+	local returnVal = func(table.unpack({...}))
+	local realAfter, cpuAfter = computer.uptime(), os.clock()
+
+	local realDiff = realAfter - realBefore
+	local cpuDiff = cpuAfter - cpuBefore
+
+	print(string.format('real%5dm%.3fs', math.floor(realDiff/60), realDiff%60))
+	print(string.format('cpu %5dm%.3fs', math.floor(cpuDiff/60), cpuDiff%60))
+
+	return returnVal, realDiff, cpuDiff
 end
 
-function heuristicManhattan(fromNode, toNode)
-	return math.abs(fromNode.x - toNode.x) + 
-		   math.abs(fromNode.y - toNode.y) +
-		   math.abs(fromNode.z - toNode.z)
+function utils.freeMemory()
+	local result = 0
+	for i = 1, 10 do
+	  result = math.max(result, computer.freeMemory())
+	  os.sleep(0)
+	end
+	return result
 end
 
-function cost(fromNode, toNode, fromOrientation) -- time-based cost function
-	local totalCost = 0
-	if calcOrientation(fromNode, toNode, fromOrientation) ~= fromOrientation then
-		totalCost += 1 -- turning takes 0.45s
-	end
-	if map[toNode] == "minecraft:air" or map[toNode] < 0.5 then -- TODO: check hardness of different materials
-		totalCost += 1 -- moving takes 0.45s
-	else
-		totalCost += 2.555 -- mining takes 0.7s + 0.45s for moving = 1.15s = 2.(5) cost
-	end
-	return totalCost
-end
-
-
-function aStar(start, startOrientation, goal, heuristic)
-	local openQueue = PriorityQueue()
-	local cameFrom = VectorMap()
-	local costSoFar = VectorMap()
-	local orientation = VectorMap()
-	
-	openQueue:put(start, 0)
-	costSoFar[start] = 0
-	orientation[start] = startOrientation
-	local currentNode
-	local nodePriority = 1
-	
-	while not openQueue:empty() do
-		currentNode = openQueue:pop()
-		
-		if currentNode == goal then
-			break
-		end
-		
-		for nextNode in neighbours(currentNode) do
-			local newCost = costSoFar[currentNode] + cost(currentNode, nextNode, orientation[current])
-			if cameFrom[nextNode] ~= nil or 
-			   newCost < costSoFar[currentNode] then
-				openQueue:put(nextNode, newCost + heuristic(currentNode, nextNode))
-				costSoFar[nextNode] = newCost
-				cameFrom[nextNode] = currentNode
-				orientation[nextNode] = calcOrientation(currentNode, nextNode, orientation[current]) -- TODO: reduce call here since it's being called twice (first time in cost()) if condition is true
-			end
-		end	
-	end
-	
-	-- reconstruct path
-	local path = {}
-	currentNode = goal
-	while currentNode ~= start do
-		table.insert(path, currentNode)
-		currentNode = cameFrom[currentNode]
-	end
-	table.insert(path, start)
-	
-end
+return utils
