@@ -52,6 +52,8 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation)
 		return sides.posz -- equivalent to sides.south
 	elseif dy ~= 0 then
 		return fromOrientation -- if we're moving vertically orientation stays the same
+	else
+		error("Supplied blocks are not adjacent: " .. tostring(fromNode) .. " and " .. tostring(toNode))
 	end
 end
 
@@ -120,6 +122,7 @@ end
 Returns path as a table of vec3 coordinates from goal to start block (without the starting block itself)
 and cost to reach the goal block --]]
 function navigation.aStar(start, startOrientation, goal, heuristic)
+    heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
 	local cameFrom = VectorMap()
 	local costSoFar = VectorMap()
@@ -157,8 +160,6 @@ function navigation.aStar(start, startOrientation, goal, heuristic)
 	local path = {}
 	local currentNode = goal
     while currentNode ~= start do
-        debug.drawCube(currentNode, debug.color.red)
-        print("COST: "..tostring(costSoFar[currentNode]))
 		table.insert(path, currentNode)
 		currentNode = cameFrom[currentNode]
 	end
@@ -194,13 +195,20 @@ function navigation.smartTurn(direction)
 	end
 end
 
+-- turns the robot to face adjacent block (node) with minimal number of turns and returns it's orientation after turning
+function navigation.faceBlock(node)
+    local targetOrientation = navigation.calcOrientation(robot.position, node, robot.orientation)
+	navigation.smartTurn(targetOrientation)
+	robot.orientation = targetOrientation
+    return targetOrientation
+end
+
 --[[ performs robot navigation through a path which should be a table of adjacent
 blocks as vec3 elements, e.g. a path returned by navigate.aStar --]]
 function navigation.navigatePath(path)
-    for i = #path, 1, -1 do
+	for i = #path, 1, -1 do
         -- calculate which way we should be facing and perform turning 
-		local targetOrientation = navigation.calcOrientation(robot.position, path[i], robot.orientation)
-        navigation.smartTurn(targetOrientation)
+		local targetOrientation = navigation.faceBlock(path[i])
         
         -- perform moving depending on vertical difference of two adjacent blocks
         local deltaY = robot.position.y - path[i].y
