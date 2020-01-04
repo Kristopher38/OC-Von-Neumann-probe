@@ -1,5 +1,6 @@
 local vec3 = require("vec3")
 local nav = require("navigation")
+local sides = require("sides")
 
 local function testCoordsFromOffset()
 	local staticCoords = vec3(73, 30, -58)
