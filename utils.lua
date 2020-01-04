@@ -1,5 +1,6 @@
 local sides = require("sides")
 local computer = require("computer")
+local event = require("event")
 
 local utils = {}
 
@@ -7,6 +8,11 @@ local utils = {}
 function utils.hasDuplicateValue(tab, value)
 	for index, element in ipairs(tab) do
 		if element == value then
+			return true
+		end
+	end
+	for k, v in pairs(tab) do
+		if v == value then
 			return true
 		end
 	end
@@ -30,6 +36,17 @@ function utils.timeIt(func, ...)
 	return returnVal, realDiff, cpuDiff
 end
 
+function utils.energyIt(func, ...)
+	local before = computer.energy()
+	local returnVal = func(table.unpack({...}))
+	local after = computer.energy()
+
+	local diff = after - before
+	print(string.format("Energy spent: %f", diff))
+
+	return returnVal, diff
+end
+
 function utils.freeMemory()
 	local result = 0
 	for i = 1, 10 do
@@ -37,6 +54,10 @@ function utils.freeMemory()
 	  os.sleep(0)
 	end
 	return result
+end
+
+function utils.waitForInput()
+	event.pull("key_down")
 end
 
 return utils
