@@ -60,4 +60,8 @@ function utils.waitForInput()
 	event.pull("key_down")
 end
 
+function utils.isInstance(instance, class)
+	return getmetatable(instance) == class
+end
+
 return utils
