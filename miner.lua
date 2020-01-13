@@ -8,17 +8,16 @@ local utils = require("utils")
 local map = require("map")
 local nav = require("navigation")
 local vec3 = require("vec3")
+local debug = require("debug")
+local inspect = require("inspect")
 
 glasses.startLinking("Kristopher38")
 glasses.setRenderPosition("absolute")
 local lookingAt = glasses.getUserLookingAt("Kristopher38")
 robot.position = vec3(lookingAt.x, lookingAt.y, lookingAt.z)
-robot.orientation = sides.west -- nav.detectOrientation()
+local argv = {...}
+robot.orientation = sides[argv[1]] -- nav.detectOrientation()
 glasses.removeAll()
-print("Mapping...")
-map.scanMap(9, 9, 9)
-print("Mapped count", map.count)
-print("Finished mapping sorrounding area")
 
 --[[ blocks (vectors) to be inspected, either by comparing to currently 
 mined ore or analyzed by the geolyzer for higher operation speed --]]
@@ -41,6 +40,15 @@ local function pickNextTargetPath()
 		return bestPath
 	else
 		error("Couldn't find best target")
+	end
+end
+
+local function scanOre(oreSide)
+	local quads = { ["minecraft:coal_ore"] = {{5, -5, -3, 1, 6, 7}, {-5, -5, 3, 10, 6, 1}, {-5, -5, 2, 10, 6, 1}, {-5, -5, 1, 10, 6, 1}, {-5, -5, 0, 10, 6, 1}, {-5, -5, -1, 10, 6, 1}, {-5, -5, -2, 10, 6, 1}, {-5, -5, -3, 10, 6, 1}, {-5, 1, 3, 11, 5, 1}, {-5, 1, 2, 11, 5, 1}, {-5, 1, 1, 11, 5, 1}, {-5, 1, 0, 11, 5, 1}, {-5, 1, -1, 11, 5, 1}, {-5, 1, -2, 11, 5, 1}, {-5, 1, -3, 11, 5, 1}}}
+
+	local blockData = geolyzer.analyze(oreSide)
+	for i, quad in ipairs(quads[blockData.name]) do
+		map.scan(table.unpack(quad))
 	end
 end
 
@@ -72,4 +80,5 @@ local function mineOreLump()
 	end
 end
 
+scanOre(sides.front)
 mineOreLump()

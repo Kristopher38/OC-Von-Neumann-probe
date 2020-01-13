@@ -8,6 +8,7 @@ local PriorityQueue = require("priorityqueue")
 local VectorMap = require("vectormap")
 local map = require("map")
 local debug = require("debug")
+local VectorChunk = require("vectorchunk")
 
 local navigation = {}
 
@@ -104,11 +105,16 @@ target block's hardness which requires mining it and possible turning cost --]]
 function navigation.cost(fromNode, toNode, fromOrientation) -- time-based cost function
 	local totalCost = 0
 	local afterOrientation = navigation.calcOrientation(fromNode, toNode, fromOrientation)
-	if ((fromOrientation == sides.negx or fromOrientation == sides.posx) and
-		(afterOrientation == sides.negz or afterOrientation == sides.posz)) or
-		((fromOrientation == sides.negz or fromOrientation == sides.posz) and
-		(afterOrientation == sides.negx or afterOrientation == sides.posx)) then
-		totalCost = totalCost + 1 -- turning takes 0.45s
+
+	-- cost for turning
+	if fromOrientation ~= afterOrientation then
+		--[[ orientation numbers are so that if we divide them by 2 and they're the same, 
+		they're opposite direction, so we need to turn around --]]
+		if math.floor(fromOrientation / 2) == math.floor(afterOrientation / 2) then
+			totalCost = totalCost + 2 -- turn around cost
+		else
+			totalCost = totalCost + 1 -- turning left or right cost
+		end 
 	end
 	if map[toNode] == "minecraft:air" then -- TODO: check hardness of different materials
 		totalCost = totalCost + 1 -- moving takes 0.45s
@@ -124,9 +130,9 @@ and cost to reach the goal block --]]
 function navigation.aStar(start, startOrientation, goal, heuristic)
     heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
-	local cameFrom = VectorMap()
-	local costSoFar = VectorMap()
-	local orientation = VectorMap()
+	local cameFrom = VectorChunk()
+	local costSoFar = VectorChunk()
+	local orientation = VectorChunk()
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
