@@ -8,6 +8,8 @@ local utils = require("utils")
 local map = require("map")
 local nav = require("navigation")
 local vec3 = require("vec3")
+local ScanBatch = require("scanbatch")
+local blockType = require("blocktype")
 local debug = require("debug")
 local inspect = require("inspect")
 
@@ -44,16 +46,38 @@ local function pickNextTargetPath()
 end
 
 local function scanOre(oreSide)
-	local quads = { ["minecraft:coal_ore"] = {{5, -5, -3, 1, 6, 7}, {-5, -5, 3, 10, 6, 1}, {-5, -5, 2, 10, 6, 1}, {-5, -5, 1, 10, 6, 1}, {-5, -5, 0, 10, 6, 1}, {-5, -5, -1, 10, 6, 1}, {-5, -5, -2, 10, 6, 1}, {-5, -5, -3, 10, 6, 1}, {-5, 1, 3, 11, 5, 1}, {-5, 1, 2, 11, 5, 1}, {-5, 1, 1, 11, 5, 1}, {-5, 1, 0, 11, 5, 1}, {-5, 1, -1, 11, 5, 1}, {-5, 1, -2, 11, 5, 1}, {-5, 1, -3, 11, 5, 1}}}
+	print("scanning ore lump")
+	local batch = ScanBatch()
+	local quads = { ["minecraft:coal_ore"] = {
+			{vec3(5, -3, -5), vec3(1, 7, 6)},
+			{vec3(-5, 3, -5), vec3(10, 1, 6)},
+			{vec3(-5, 2, -5), vec3(10, 1, 6)},
+			{vec3(-5, 1, -5), vec3(10, 1, 6)},
+			{vec3(-5, 0, -5), vec3(10, 1, 6)},
+			{vec3(-5, -1, -5), vec3(10, 1, 6)},
+			{vec3(-5, -2, -5), vec3(10, 1, 6)},
+			{vec3(-5, -3, -5), vec3(10, 1, 6)},
+			{vec3(-5, 3, 1), vec3(11, 1, 5)},
+			{vec3(-5, 2, 1), vec3(11, 1, 5)},
+			{vec3(-5, 1, 1), vec3(11, 1, 5)},
+			{vec3(-5, 0, 1), vec3(11, 1, 5)},
+			{vec3(-5, -1, 1), vec3(11, 1, 5)},
+			{vec3(-5, -2, 1), vec3(11, 1, 5)},
+			{vec3(-5, -3, 1), vec3(11, 1, 5)}
+		}
+	}
 
 	local blockData = geolyzer.analyze(oreSide)
-	for i, quad in ipairs(quads[blockData.name]) do
-		map.scan(table.unpack(quad))
+	--for i, quad in ipairs(quads[blockData.name]) do
+	for i, quad in ipairs(quads["minecraft:coal_ore"]) do
+		batch:scanQuad(table.unpack(quad))
 	end
+	return batch
 end
 
-local function mineOreLump()
-	table.insert(toMineVectors, nav.coordsFromOffset(robot.position, vec3(1, 0, 0), robot.orientation))
+local function mineOreLump(firstOreVector)
+	print("mining ore lump")
+	table.insert(toMineVectors, firstOreVector)
 
 	while #toMineVectors > 0 do
 		local nextTargetPath = pickNextTargetPath()
@@ -68,10 +92,10 @@ local function mineOreLump()
 		else
 			robot.swingDown()
 		end
-		map[target] = "minecraft:air"
+		map[target] = blockType.air
 
 		for i, vector in ipairs(nav.neighbours(target)) do
-			if map[vector] == "minecraft:ore" then
+			if map.assumeBlockType(map[vector]) == blockType.ore then
 				if not utils.hasDuplicateValue(toMineVectors, vector) then
 					table.insert(toMineVectors, vector)
 				end
@@ -80,5 +104,64 @@ local function mineOreLump()
 	end
 end
 
-scanOre(sides.front)
-mineOreLump()
+local function scanLayer()
+	print("scanning layer y="..tostring(robot.position.y))
+	local batch = ScanBatch()
+	local quads = {
+		{vec3(0, 0, -8), vec3(8, 1, 8)},
+		{vec3(0, 0, 0), vec3(8, 1, 8)},
+		{vec3(-8, 0, -8), vec3(8, 1, 8)},
+		{vec3(-8, 0, 0), vec3(8, 1, 8)}
+	}
+	for i, quad in ipairs(quads) do
+		batch:scanQuad(table.unpack(quad))
+	end
+	return batch
+end
+
+
+local bedrockReached = false
+
+while not bedrockReached do
+	local batch = scanLayer()
+	local ores = batch:query(blockType.ore)
+	local robotColumnPos = utils.deepCopy(robot.position)
+	while #ores > 0 do
+		print("finding neares ore...")
+		local min = math.huge
+		local minOre
+		for i, ore in ipairs(ores) do
+			local heuristicDistance = nav.heuristicManhattan(robot.position, ore)
+			if heuristicDistance < min then
+				min = heuristicDistance
+				minOre = ore
+			end
+		end
+		print("nearest ore found, navigating")
+		local path = nav.aStar(robot.position, robot.orientation, minOre, nav.heuristicManhattan)
+		nav.navigatePath(path, false)
+		print("navigation finished")
+		local oreSide
+		local deltaY = robot.position.y - path[1].y
+		print("deltaY = "..tostring(deltaY))
+		if deltaY == 0 then
+			oreSide = sides.front
+		elseif deltaY == -1 then
+			oreSide = sides.up
+		else
+			oreSide = sides.down
+		end
+		local oreLumpBatch = scanOre(oreSide)
+		mineOreLump(minOre)
+		ores = batch:query(blockType.ore)
+	end
+	print("going back to the digging column")
+	local path = nav.aStar(robot.position, robot.orientation, robotColumnPos, nav.heuristicManhattan)
+	nav.navigatePath(path, true)
+	robot.swingDown()
+	if not robot.down() then
+		bedrockReached = true
+	else
+		robot.position.y = robot.position.y - 1
+	end
+end
