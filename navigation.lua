@@ -9,6 +9,7 @@ local VectorMap = require("vectormap")
 local map = require("map")
 local debug = require("debug")
 local VectorChunk = require("vectorchunk")
+local blockType = require("blocktype")
 
 local navigation = {}
 
@@ -82,12 +83,16 @@ end
 --[[ returns six neighbouring blocks (nodes) that a block (node) has, 
 one for  each side of the block --]]
 function navigation.neighbours(node)
-    -- TODO: add bounds checking for Y coordinate
 	local neighbourNodes = {}
 	table.insert(neighbourNodes, vec3(node.x + 1, node.y, node.z))
 	table.insert(neighbourNodes, vec3(node.x - 1, node.y, node.z))
-	table.insert(neighbourNodes, vec3(node.x, node.y + 1, node.z))
-	table.insert(neighbourNodes, vec3(node.x, node.y - 1, node.z))
+	if node.y < 255 then
+		table.insert(neighbourNodes, vec3(node.x, node.y + 1, node.z))
+	end
+	-- don't bother returning neighbour for y = 0 since it's all bedrock
+	if node.y > 1 then
+		table.insert(neighbourNodes, vec3(node.x, node.y - 1, node.z))
+	end
 	table.insert(neighbourNodes, vec3(node.x, node.y, node.z + 1))
 	table.insert(neighbourNodes, vec3(node.x, node.y, node.z - 1))
 	return neighbourNodes
@@ -116,7 +121,7 @@ function navigation.cost(fromNode, toNode, fromOrientation) -- time-based cost f
 			totalCost = totalCost + 1 -- turning left or right cost
 		end 
 	end
-	if map[toNode] == "minecraft:air" then -- TODO: check hardness of different materials
+	if map.assumeBlockType(map[toNode]) == blockType.air then -- TODO: check hardness of different materials
 		totalCost = totalCost + 1 -- moving takes 0.45s
 	else
 		totalCost = totalCost + 2.555 -- mining takes 0.7s + 0.45s for moving = 1.15s = 2.(5) cost
@@ -210,9 +215,16 @@ function navigation.faceBlock(node)
 end
 
 --[[ performs robot navigation through a path which should be a table of adjacent
-blocks as vec3 elements, e.g. a path returned by navigate.aStar --]]
-function navigation.navigatePath(path)
-	for i = #path, 1, -1 do
+blocks as vec3 elements, e.g. a path returned by navigate.aStar.
+Parameter includeGoal defines if the robot should go into the goal block or stop
+navigation after reaching second-to-last block and turning towards it --]]
+function navigation.navigatePath(path, includeGoal)
+	-- default includeGoal to true
+	if includeGoal == nil then
+		includeGoal = true
+	end
+
+	for i = #path, (includeGoal and 1 or 2), -1 do
         -- calculate which way we should be facing and perform turning 
 		local targetOrientation = navigation.faceBlock(path[i])
         
@@ -232,7 +244,10 @@ function navigation.navigatePath(path)
         -- update the globals
 		robot.orientation = targetOrientation
         robot.position = path[i]
-        map[path[i]] = "minecraft:air"
+        map[path[i]] = blockType.air
+	end
+	if not includeGoal then
+		navigation.faceBlock(path[1])
 	end
 end
 
