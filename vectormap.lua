@@ -15,7 +15,7 @@ setmetatable(VectorMap, {__call = function(cls, _chunkSize)
 	return self
 end })
 
-function VectorMap.__index(self, vector, ...)
+function VectorMap.__index(self, vector)
 	if utils.isInstance(vector, vec3) then
 		local chunkOffset = self:offsetFromAbsolute(vector)
 		local chunkHash = tostring(chunkOffset)
@@ -58,9 +58,10 @@ function VectorMap.__pairs(self)
 	end
 	local function iterator(self, index)
 		if chunkIterator then
-			index, element = chunkIterator(chunk, index and self:localFromAbsolute(index, vec3.tovec3(chunkIndex)) or index)
+			local chunkVector = vec3.tovec3(chunkIndex)
+			index, element = chunkIterator(chunk, index and self:localFromAbsolute(index, chunkVector) or index)
 			if element then
-				return self:absoluteFromLocal(index, vec3.tovec3(chunkIndex)), element
+				return self:absoluteFromLocal(index, chunkVector), element
 			else
 				chunkIndex, chunk = next(self.chunks, chunkIndex)
 				if chunk then
