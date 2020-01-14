@@ -21,6 +21,14 @@ function vec3.__eq(self, other)
 	return self.x == other.x and self.y == other.y and self.z == other.z
 end
 
+function vec3.__add(self, other)
+	return vec3(self.x + other.x, self.y + other.y, self.z + other.z)
+end
+
+function vec3.__sub(self, other)
+	return vec3(self.x - other.x, self.y - other.y, self.z - other.z)
+end
+
 function vec3.__tostring(self)
 	return "[" .. self.x .. ", " .. self.y .. ", " .. self.z .. "]"
 end
