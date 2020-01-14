@@ -36,17 +36,22 @@ function utils.timeIt(func, ...)
 	return returnVal, realDiff, cpuDiff
 end
 
+--[[ measures how much energy execution of a function took, returns
+function return value, energy difference, and additionally prints
+execution times --]]
 function utils.energyIt(func, ...)
 	local before = computer.energy()
 	local returnVal = func(table.unpack({...}))
 	local after = computer.energy()
 
 	local diff = after - before
-	print(string.format("Energy spent: %f", diff))
+	print(string.format("Energy difference: %f", diff))
 
 	return returnVal, diff
 end
 
+--[[ force Lua garbage collector to run, credits to Akuukis and Sangar,
+check https://oc.cil.li/topic/243-memory-management/ --]]
 function utils.freeMemory()
 	local result = 0
 	for i = 1, 10 do
@@ -56,12 +61,35 @@ function utils.freeMemory()
 	return result
 end
 
+-- waits for a keypress
 function utils.waitForInput()
 	event.pull("key_down")
 end
 
+-- checks if object is an instance of class by comparing metatables
 function utils.isInstance(instance, class)
 	return getmetatable(instance) == class
+end
+
+--[[ deepcopy a table, credits to tylerneylon,
+check https://gist.github.com/tylerneylon/81333721109155b2d244 --]]
+function utils.deepCopy(obj, seen)
+	-- Handle non-tables and previously-seen tables.
+	if type(obj) ~= 'table' then
+		return obj
+	end
+	if seen and seen[obj] then
+		return seen[obj]
+	end
+
+	-- New table; mark it as seen an copy recursively.
+	local s = seen or {}
+	local res = setmetatable({}, getmetatable(obj))
+	s[obj] = res
+	for k, v in pairs(obj) do
+		res[utils.deepCopy(k, s)] = utils.deepCopy(v, s)
+	end
+	return res
 end
 
 return utils
