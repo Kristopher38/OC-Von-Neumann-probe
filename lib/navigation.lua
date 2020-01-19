@@ -59,6 +59,28 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation)
 	end
 end
 
+function navigation.isOppositeDirection(fromOrientation, afterOrientation)
+	--[[ sides api numbers are so that if you do integer division by 2 on them,
+	it means that one direction is opposite to the other --]]
+	return math.floor(robot.orientation / 2) == math.floor(direction / 2)
+end
+
+function navigation.calcCostForPath(path, costFunction, skipGoal, initialOrientation)
+	costFunction = costFunction or navigation.costTime
+	skipGoal = skipGoal or false
+	initialOrientation = initialOrientation or robot.orientation
+
+	local orientation = initialOrientation
+	local totalCost = 0
+	for i = #path, (skipGoal and 3 or 2), -1 do
+		totalCost = totalCost + navigation.costTime(path[i], path[i-1], orientation)
+		orientation = navigation.calcOrientation(path[i], path[i-1], orientation)
+	end
+	if skipGoal then
+		totalCost = totalCost + navigation.costTime(path[2], path[1], orientation, true, false, true)
+	end
+end
+
 --[[ detect robot orientation using geolyzer as it always returns the scan() data in the same order
 independently of the robot orientation --]]
 function navigation.detectOrientation()
@@ -107,24 +129,28 @@ end
 
 --[[ returns cost for moving between two adjacent blocks (nodes), taking into account
 target block's hardness which requires mining it and possible turning cost --]]
-function navigation.costTime(fromNode, toNode, fromOrientation) -- time-based cost function
+function navigation.costTime(fromNode, toNode, fromOrientation, ignoreWalking, ignoreTurning, ignoreBreaking) -- time-based cost function
+	ignoreWalking = ignoreWalking or false
+	ignoreTurning = ignoreTurning or false
+	ignoreBreaking = ignoreBreaking or false
 	local totalCost = 0
 	local afterOrientation = navigation.calcOrientation(fromNode, toNode, fromOrientation)
 
+	-- base cost for moving
+	if not ignoreWalking then
+		totalCost = totalCost + 1
+	end
 	-- cost for turning
-	if fromOrientation ~= afterOrientation then
-		--[[ orientation numbers are so that if we divide them by 2 and they're the same, 
-		they're opposite direction, so we need to turn around --]]
-		if math.floor(fromOrientation / 2) == math.floor(afterOrientation / 2) then
+	if not ignoreTurning and fromOrientation ~= afterOrientation then
+		if navigation.isOppositeDirection(fromOrientation, afterOrientation) then
 			totalCost = totalCost + 2 -- turn around cost
 		else
 			totalCost = totalCost + 1 -- turning left or right cost
 		end 
 	end
-	if map.assumeBlockType(map[toNode]) == blockType.air then -- TODO: check hardness of different materials
-		totalCost = totalCost + 1 -- moving takes 0.45s
-	else
-		totalCost = totalCost + 2.555 -- mining takes 0.7s + 0.45s for moving = 1.15s = 2.(5) cost
+	-- cost for breaking blocks, TODO: check hardness of different materials
+	if not ignoreBreaking and map.assumeBlockType(map[toNode]) ~= blockType.air then
+		totalCost = totalCost + 1.555
 	end
 	return totalCost
 end
@@ -184,9 +210,7 @@ end
 function navigation.smartTurn(direction)
     -- check if we're not already facing the desired direction 
     if robot.orientation ~= direction then
-       --[[ sides api numbers are so that if you do integer division by 2 on them,
-        it means that one direction is opposite to the other --]]
-		if math.floor(robot.orientation / 2) == math.floor(direction / 2)  then
+		if navigation.isOppositeDirection(robot.orientation, direction) then
 			robot.turnAround()
 		else
             local directionDelta = robot.orientation - direction
@@ -218,15 +242,13 @@ end
 
 --[[ performs robot navigation through a path which should be a table of adjacent
 blocks as vec3 elements, e.g. a path returned by navigate.aStar.
-Parameter includeGoal defines if the robot should go into the goal block or stop
+Parameter skipGoal defines if the robot should go into the goal block or stop
 navigation after reaching second-to-last block and turning towards it --]]
-function navigation.navigatePath(path, includeGoal)
-	-- default includeGoal to true
-	if includeGoal == nil then
-		includeGoal = true
-	end
+function navigation.navigatePath(path, skipGoal)
+	-- default skipGoal to false
+	skipGoal = skipGoal or false
 
-	for i = #path, (includeGoal and 1 or 2), -1 do
+	for i = #path, (skipGoal and 2 or 1), -1 do
         -- calculate which way we should be facing and perform turning 
 		local targetOrientation = navigation.faceBlock(path[i])
         
@@ -246,7 +268,7 @@ function navigation.navigatePath(path, includeGoal)
         -- update the globals
         map[path[i]] = blockType.air
 	end
-	if not includeGoal then
+	if skipGoal then
 		navigation.faceBlock(path[1])
 	end
 end
