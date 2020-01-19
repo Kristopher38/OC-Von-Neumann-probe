@@ -8,14 +8,15 @@ local map = require("map")
 local utils = require("utils")
 local vec3 = require("vec3")
 local robot = require("robot")
+local ScanBatch = require("scanbatch")
 
 glasses.startLinking("Kristopher38")
 glasses.setRenderPosition("absolute")
 
 glasses.removeAll()
 print("Mapping...")
-map.scanMap(15, 15, 15)
-print("Mapped count", map.count)
+local batch = ScanBatch()
+batch:scanAround(vec3(17, 17, 17))
 print("Finished mapping sorrounding area")
 while true do
 	local EVENT, ID, USER, PLAYER_POSITION_X, PLAYER_POSITION_Y, PLAYER_POSITION_Z, 
@@ -26,6 +27,6 @@ while true do
 	if target ~= robot.position then
 		glasses.removeAll()
 		local path = utils.timeIt(nav.aStar, target)
-		nav.navigatePath(path)
+		nav.navigatePath(path, true)
 	end
 end

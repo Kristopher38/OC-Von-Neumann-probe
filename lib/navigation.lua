@@ -59,10 +59,10 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation)
 	end
 end
 
-function navigation.isOppositeDirection(fromOrientation, afterOrientation)
+function navigation.isOppositeDirection(orientationFirst, orientationSecond)
 	--[[ sides api numbers are so that if you do integer division by 2 on them,
 	it means that one direction is opposite to the other --]]
-	return math.floor(robot.orientation / 2) == math.floor(direction / 2)
+	return math.floor(orientationFirst / 2) == math.floor(orientationSecond / 2)
 end
 
 function navigation.calcCostForPath(path, costFunction, skipGoal, initialOrientation)

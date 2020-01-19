@@ -17,7 +17,7 @@ end })
 
 --[[ scan the sorrounding sizex x sizey x sizez area with robot roughly in the center
 TODO: implement cube packing algorithm --]]
-function ScanBatch:scanAround(sizeVector, centerVector)
+function ScanBatch:scanAround(sizeVector)
     local startx = -math.floor(sizeVector.x / 2)
     local endx = math.floor(sizeVector.x / 2) - (sizeVector.x % 2 == 0 and 1 or 0)
     local starty = -math.floor(sizeVector.y / 2)
@@ -26,8 +26,8 @@ function ScanBatch:scanAround(sizeVector, centerVector)
     for x = startx, endx, 1 do
         for z = startz, endz, 1 do
             local scanData = geolyzer.scan(x, z, starty, 1, 1, sizeVector.y)
-            for i = 1, sizez do
-                map[centerVector + vec3(x, i + starty - 1, z)] = scanData[i]
+            for i = 1, sizeVector.z do
+                map[robot.position + vec3(x, i + starty - 1, z)] = scanData[i]
             end
         end
     end
