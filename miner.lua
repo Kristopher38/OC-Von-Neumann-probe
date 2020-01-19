@@ -26,7 +26,7 @@ local function pickNextTargetPath()
 	local bestCost = math.huge
 	local bestPos
 	for i, target in ipairs(toMineVectors) do
-		local path, cost = nav.aStar(robot.position, robot.orientation, target)
+		local path, cost = nav.aStar(target)
 		if cost < bestCost then
 			bestCost = cost
 			bestPath = path
@@ -134,7 +134,7 @@ while not bedrockReached do
 			end
 		end
 		print("nearest ore found, navigating")
-		local path = nav.aStar(robot.position, robot.orientation, minOre, nav.heuristicManhattan)
+		local path = nav.aStar(minOre)
 		nav.navigatePath(path, false)
 		print("navigation finished")
 		local oreSide
@@ -152,7 +152,7 @@ while not bedrockReached do
 		ores = batch:query(blockType.ore)
 	end
 	print("going back to the digging column")
-	local path = nav.aStar(robot.position, robot.orientation, robotColumnPos, nav.heuristicManhattan)
+	local path = nav.aStar(robotColumnPos)
 	nav.navigatePath(path, true)
 	robot.swingDown()
 	if not robot.down() then

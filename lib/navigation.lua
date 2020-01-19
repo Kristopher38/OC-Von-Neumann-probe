@@ -107,7 +107,7 @@ end
 
 --[[ returns cost for moving between two adjacent blocks (nodes), taking into account
 target block's hardness which requires mining it and possible turning cost --]]
-function navigation.cost(fromNode, toNode, fromOrientation) -- time-based cost function
+function navigation.costTime(fromNode, toNode, fromOrientation) -- time-based cost function
 	local totalCost = 0
 	local afterOrientation = navigation.calcOrientation(fromNode, toNode, fromOrientation)
 
@@ -132,8 +132,11 @@ end
 --[[ Performs A* algorithm on a global map variable to find the shortest path from start to goal blocks (nodes).
 Returns path as a table of vec3 coordinates from goal to start block (without the starting block itself)
 and cost to reach the goal block --]]
-function navigation.aStar(start, startOrientation, goal, heuristic)
-    heuristic = heuristic or navigation.heuristicManhattan
+function navigation.aStar(goal, start, startOrientation, cost, heuristic)
+	start = start or robot.position
+	startOrientation = startOrientation or robot.orientation
+	cost = cost or navigation.costTime
+	heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
 	local cameFrom = VectorChunk()
 	local costSoFar = VectorChunk()
@@ -154,7 +157,7 @@ function navigation.aStar(start, startOrientation, goal, heuristic)
         
         -- for each neighbour in our currentNode neighbours
 		for i, nextNode in pairs(navigation.neighbours(currentNode)) do
-            local newCost = costSoFar[currentNode] + navigation.cost(currentNode, nextNode, orientation[currentNode])
+            local newCost = costSoFar[currentNode] + cost(currentNode, nextNode, orientation[currentNode])
             -- if we haven't visited the block (node) yet or it has smaller cost than previously
 			if cameFrom[nextNode] == nil or 
                newCost < costSoFar[nextNode] then
