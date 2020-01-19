@@ -11,9 +11,6 @@ local robot = require("robot")
 
 glasses.startLinking("Kristopher38")
 glasses.setRenderPosition("absolute")
-local lookingAt = glasses.getUserLookingAt("Kristopher38")
-robot.position = vec3(lookingAt.x, lookingAt.y, lookingAt.z)
-robot.orientation = nav.detectOrientation()
 
 glasses.removeAll()
 print("Mapping...")

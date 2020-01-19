@@ -210,7 +210,6 @@ end
 function navigation.faceBlock(node)
     local targetOrientation = navigation.calcOrientation(robot.position, node, robot.orientation)
 	navigation.smartTurn(targetOrientation)
-	robot.orientation = targetOrientation
     return targetOrientation
 end
 
@@ -242,8 +241,6 @@ function navigation.navigatePath(path, includeGoal)
 		end
 
         -- update the globals
-		robot.orientation = targetOrientation
-        robot.position = path[i]
         map[path[i]] = blockType.air
 	end
 	if not includeGoal then

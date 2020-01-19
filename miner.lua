@@ -15,10 +15,6 @@ local inspect = require("inspect")
 
 glasses.startLinking("Kristopher38")
 glasses.setRenderPosition("absolute")
-local lookingAt = glasses.getUserLookingAt("Kristopher38")
-robot.position = vec3(lookingAt.x, lookingAt.y, lookingAt.z)
-local argv = {...}
-robot.orientation = sides[argv[1]] -- nav.detectOrientation()
 glasses.removeAll()
 
 --[[ blocks (vectors) to be inspected, either by comparing to currently 
@@ -161,7 +157,5 @@ while not bedrockReached do
 	robot.swingDown()
 	if not robot.down() then
 		bedrockReached = true
-	else
-		robot.position.y = robot.position.y - 1
 	end
 end
