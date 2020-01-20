@@ -289,7 +289,7 @@ function navigation.navigatePath(path, skipGoal)
         -- update the globals
         map[path[i]] = blockType.air
 	end
-	if skipGoal then
+	if #path > 0 and skipGoal then
 		navigation.faceBlock(path[1])
 	end
 end

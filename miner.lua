@@ -135,7 +135,7 @@ while not bedrockReached do
 		end
 		print("nearest ore found, navigating")
 		local path = nav.aStar(minOre)
-		nav.navigatePath(path, false)
+		nav.navigatePath(path, true)
 		print("navigation finished")
 		local oreSide
 		local deltaY = robot.position.y - path[1].y
@@ -153,7 +153,7 @@ while not bedrockReached do
 	end
 	print("going back to the digging column")
 	local path = nav.aStar(robotColumnPos)
-	nav.navigatePath(path, true)
+	nav.navigatePath(path)
 	robot.swingDown()
 	if not robot.down() then
 		bedrockReached = true
