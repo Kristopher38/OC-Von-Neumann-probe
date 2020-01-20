@@ -8,7 +8,7 @@ local blockType = {
     ore = 3,
     obsidian = 50,
     fluid = 100,
-    unknown = -1
+    bedrock = -1
 }
 
 return blockType

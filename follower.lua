@@ -26,7 +26,6 @@ while true do
 	local target = vec3(math.ceil(BLOCK_POSITION_X + robot.position.x), math.ceil(BLOCK_POSITION_Y + robot.position.y), math.ceil(BLOCK_POSITION_Z + robot.position.z))
 	if target ~= robot.position then
 		glasses.removeAll()
-		local path = utils.timeIt(nav.aStar, target)
-		nav.navigatePath(path, true)
+		utils.timeIt(nav.goTo, target, true)
 	end
 end

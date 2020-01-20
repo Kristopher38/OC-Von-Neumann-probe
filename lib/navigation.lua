@@ -103,20 +103,25 @@ function navigation.detectOrientation()
 end
 
 --[[ returns six neighbouring blocks (nodes) that a block (node) has, 
-one for  each side of the block --]]
+one for each side of the block, TODO: potential for optimization (loop
+unrolling and Y bounds checking only for neighbours above and below) --]]
 function navigation.neighbours(node)
 	local neighbourNodes = {}
-	table.insert(neighbourNodes, vec3(node.x + 1, node.y, node.z))
-	table.insert(neighbourNodes, vec3(node.x - 1, node.y, node.z))
-	if node.y < 255 then
-		table.insert(neighbourNodes, vec3(node.x, node.y + 1, node.z))
+	local offsetVectors = {vec3(1, 0, 0), vec3(-1, 0, 0), vec3(0, 1, 0), vec3(0, -1, 0), vec3(0, 0, 1), vec3(0, 0, -1)}
+	for i, offsetVector in ipairs(offsetVectors) do
+		local neighbourNode = node + offsetVector
+		-- don't bother returning neighbour for y = 0 since it's all bedrock
+		if neighbourNode.y < 256 and neighbourNode.y > 0 then
+			-- little optimization to not query map every time as it's costly
+			if neighbourNode.y < 5 then
+				if map.assumeBlockType(map[neighbourNode]) ~= blockType.bedrock then
+					table.insert(neighbourNodes, neighbourNode)
+				end
+			else
+				table.insert(neighbourNodes, neighbourNode)
+			end
+		end
 	end
-	-- don't bother returning neighbour for y = 0 since it's all bedrock
-	if node.y > 1 then
-		table.insert(neighbourNodes, vec3(node.x, node.y - 1, node.z))
-	end
-	table.insert(neighbourNodes, vec3(node.x, node.y, node.z + 1))
-	table.insert(neighbourNodes, vec3(node.x, node.y, node.z - 1))
 	return neighbourNodes
 end
 
@@ -253,16 +258,32 @@ function navigation.navigatePath(path, skipGoal)
 		local targetOrientation = navigation.faceBlock(path[i])
         
         -- perform moving depending on vertical difference of two adjacent blocks
-        local deltaY = robot.position.y - path[i].y
-		if deltaY == 0 then
-			robot.swing()
-			robot.forward()
-		elseif deltaY == -1 then
-			robot.swingUp()
-			robot.up()
+		local delta = robot.position - path[i]
+		local nodeHasBlock = map.assumeBlockType(map[path[i]]) ~= blockType.air
+
+		--[[ safe movement with fallbacks if scan info is not accurate or sand/gravel
+		falls in front of the robot, currently doesn't support entities --]]
+		if delta.y == 0 then
+			if nodeHasBlock then
+				robot.swing()
+			end
+			while not robot.forward() do
+				robot.swing()
+			end
+		elseif delta.y == -1 then
+			if nodeHasBlock then
+				robot.swingUp()
+			end
+			while not robot.up() do
+				robot.swingUp()
+			end
 		else
-			robot.swingDown()
-			robot.down()
+			if nodeHasBlock then
+				robot.swingDown()
+			end
+			while not robot.down() do
+				robot.swingDown()
+			end
 		end
 
         -- update the globals
@@ -271,6 +292,12 @@ function navigation.navigatePath(path, skipGoal)
 	if skipGoal then
 		navigation.faceBlock(path[1])
 	end
+end
+
+function navigation.goTo(goal, skipGoal, start, startOrientation, cost, heuristic)
+	skipGoal = skipGoal or false
+	local path, cost = navigation.aStar(goal, start, startOrientation, cost, heuristic)
+	navigation.navigatePath(path, skipGoal)
 end
 
 return navigation
