@@ -24,17 +24,29 @@ debug.color =  {black={0, 0, 0},
 
 --[[ debug.cubes = PriorityQueue()
 debug.cubes.n = 0 ]]
-function debug.drawCube(vector, cubeColor, cubeOpacity)
-	cubeOpacity = cubeOpacity or 0.5
+function debug.drawCube(vector, color, opacity)
+	opacity = opacity or 0.5
 	local cube = glasses.addCube3D()
 	cube.addTranslation(vector.x, vector.y, vector.z)
-	cube.addColor(cubeColor[1], cubeColor[2], cubeColor[3], cubeOpacity)
+	cube.addColor(color[1], color[2], color[3], opacity)
 	cube.setVisibleThroughObjects(true)
 --[[     debug.cubes:put(cube, debug.cubes.n)
 	debug.cubes.n = debug.cubes.n + 1
 	if cubes:size() > 255 then
 		cubes:pop().removeWidget()
 	end ]]
+end
+
+function debug.drawText(vector, text, color, opacity, fontSize)
+	color = color or debug.color.black
+	opacity = opacity or 0.5
+	fontSize = fontSize or 6
+	local textWidget = glasses.addText3D()
+	textWidget.setText(text)
+	textWidget.setFontSize(fontSize)
+	textWidget.addTranslation(vector.x, vector.y, vector.z)
+	textWidget.addColor(color[1], color[2], color[3], opacity)
+	textWidget.setVisibleThroughObjects(true)
 end
 
 function debug.clearWidgets()
