@@ -10,6 +10,7 @@ local map = require("map")
 local debug = require("debug")
 local VectorChunk = require("vectorchunk")
 local blockType = require("blocktype")
+local utils = require("utils")
 
 local navigation = {}
 
@@ -65,20 +66,23 @@ function navigation.isOppositeDirection(orientationFirst, orientationSecond)
 	return math.floor(orientationFirst / 2) == math.floor(orientationSecond / 2)
 end
 
-function navigation.calcCostForPath(path, costFunction, skipGoal, initialOrientation)
+function navigation.calcCostForPath(path, costFunction, skipGoal, initialPosition, initialOrientation)
 	costFunction = costFunction or navigation.costTime
 	skipGoal = skipGoal or false
+	initialPosition = initialPosition or robot.position
 	initialOrientation = initialOrientation or robot.orientation
 
 	local orientation = initialOrientation
-	local totalCost = 0
-	for i = #path, (skipGoal and 3 or 2), -1 do
+	local totalCost = navigation.costTime(initialPosition, path[#path], initialOrientation)
+	for i = #path, 2, -1 do
 		totalCost = totalCost + navigation.costTime(path[i], path[i-1], orientation)
 		orientation = navigation.calcOrientation(path[i], path[i-1], orientation)
 	end
 	if skipGoal then
-		totalCost = totalCost + navigation.costTime(path[2], path[1], orientation, true, false, true)
+		-- subtract turning cost
+		totalCost = totalCost - navigation.costTime(path[2], path[1], orientation, true, false, true)
 	end
+	return totalCost
 end
 
 --[[ detect robot orientation using geolyzer as it always returns the scan() data in the same order
@@ -112,7 +116,7 @@ function navigation.neighbours(node)
 		local neighbourNode = node + offsetVector
 		-- don't bother returning neighbour for y = 0 since it's all bedrock
 		if neighbourNode.y < 256 and neighbourNode.y > 0 then
-			-- little optimization to not query map every time as it's costly
+			-- little optimization to not query map every time as it's costly (bedrock exists only on y <= 4)
 			if neighbourNode.y < 5 then
 				if map.assumeBlockType(map[neighbourNode]) ~= blockType.bedrock then
 					table.insert(neighbourNodes, neighbourNode)
@@ -129,7 +133,12 @@ end
 function navigation.heuristicManhattan(fromNode, toNode)
 	return math.abs(fromNode.x - toNode.x) + 
 		   math.abs(fromNode.y - toNode.y) +
-		   math.abs(fromNode.z - toNode.z)
+		   math.abs(fromNode.z - toNode.z) +
+		   ((fromNode.x - toNode.x ~= 0 and fromNode.z - toNode.z ~= 0) and 1 or 0)
+end
+
+function navigation.heuristicEuclidean(fromNode, toNode)
+	return math.sqrt((fromNode.x - fromNode.x)^2 + (fromNode.y - fromNode.y)^2 + (fromNode.z - fromNode.z)^2)
 end
 
 --[[ returns cost for moving between two adjacent blocks (nodes), taking into account
@@ -209,6 +218,78 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 		currentNode = cameFrom[currentNode]
 	end
 	return path, costSoFar[goal]
+end
+
+-- performs traveling salesman problem algorithm using nearest neighbour algorithm
+function navigation.tspGreedy(nodes)
+	local path = {}
+	local totalCost = 0
+	local currentNodeIndex = 1
+
+	while #nodes > 1 do
+		local currentNode = table.remove(nodes, currentNodeIndex)
+		table.insert(path, currentNode)
+
+		-- search for nearest neighbour of current node
+		local bestNodeIndex = 1
+		local bestNodeDistance = navigation.heuristicManhattan(currentNode, nodes[1])
+		for i, node in ipairs(nodes) do
+			local nodeDistance = navigation.heuristicManhattan(currentNode, node)
+			if nodeDistance < bestNodeDistance then
+				bestNodeDistance = nodeDistance
+				bestNodeIndex = i
+			end
+		end
+
+		-- update loop variables to process next node and add to total cost
+		currentNodeIndex = bestNodeIndex
+		totalCost = totalCost + bestNodeDistance
+	end
+
+	table.insert(path, table.remove(nodes, 1))
+	totalCost = totalCost + navigation.heuristicManhattan(path[1], path[#path])
+	return path, totalCost
+end
+
+function navigation.tspTwoOpt(tour)
+	local twoOptExchange = function(tour, _i, _k)
+		local newTour = {}
+		for i = 0, _i - 1 do
+			table.insert(newTour, tour[i])
+		end
+		for i = _k, _i, -1 do
+			table.insert(newTour, tour[i])
+		end
+		for i = _k + 1, #tour do
+			table.insert(newTour, tour[i])
+		end
+		return newTour
+	end
+	local heuristicCost = function(tour)
+		local totalCost = 0
+		for i = 1, #tour - 1 do
+			totalCost = totalCost + navigation.heuristicManhattan(tour[i], tour[i+1])
+		end
+		totalCost = totalCost + navigation.heuristicManhattan(tour[1], tour[#tour])
+		return totalCost
+	end
+
+	local optimizedTour = utils.deepCopy(tour)
+	local bestDistance = heuristicCost(optimizedTour)
+	::startAgain::
+	for i = 2, #optimizedTour - 1 do
+		for k = i, #optimizedTour do
+			local newTour = twoOptExchange(optimizedTour, i, k)
+			local newDistance = heuristicCost(newTour)
+			if newDistance < bestDistance then
+				bestDistance = newDistance
+				optimizedTour = newTour
+				goto startAgain
+			end
+		end
+	end
+
+	return optimizedTour, bestDistance
 end
 
 -- performs robot turning with minimal number of turns
