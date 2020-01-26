@@ -54,7 +54,7 @@ function ScanBatch:scanQuad(offsetVector, sizeVector)
 	table.insert(self.scans, {robot.position + offsetVector, sizeVector})
 end
     
-function ScanBatch:query(block)
+function ScanBatch:query(_blockType)
     local results = {}
     for i, scan in ipairs(self.scans) do
         local offsetVector = scan[1]
@@ -63,9 +63,7 @@ function ScanBatch:query(block)
             for y = 0, sizeVector.y - 1 do
                 for z = 0, sizeVector.z - 1 do
                     local blockVector = vec3(offsetVector.x + x, offsetVector.y + y, offsetVector.z + z)
-                    local block = map[blockVector]
-                    --if block >= min and block <= max then
-                    if block == blockType.ore then
+                    if map.assumeBlockType(map[blockVector]) == _blockType then
                         table.insert(results, blockVector)
                     end
                 end
