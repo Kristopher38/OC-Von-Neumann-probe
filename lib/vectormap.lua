@@ -15,20 +15,51 @@ setmetatable(VectorMap, {__call = function(cls, _chunkSize)
 	return self
 end })
 
+-- converts vector from global coordinates to local coordinates calculated using given offset
+local function localFromAbsolute(vector, offset, chunkSize)
+    return vector.x % (chunkSize.x), vector.y % (chunkSize.y), vector.z % (chunkSize.z)
+end
+
+local function absoluteFromLocal(vector, offset, chunkSize)
+	return vec3(vector.x + chunkSize.x * offset.x, vector.y + chunkSize.y * offset.y, vector.z + chunkSize.z * offset.z)
+end
+
+-- calculates chunk offset from absolute coordinates
+local function offsetFromAbsolute(vector, chunkSize)
+	return math.floor(vector.x / chunkSize.x), math.floor(vector.y / chunkSize.y), math.floor(vector.z / chunkSize.z)
+end
+
+local function packxyz(_x, _y, _z)
+	local x = bit32.lrotate(bit32.extract(_x, 0, 12), 20)
+	local y = bit32.lrotate(bit32.extract(_y, 0, 8), 12)
+	local z = bit32.extract(_z, 0, 12)
+	return bit32.bor(x, y, z)
+end
+
+function VectorMap:at(vector)
+	local x, y, z = offsetFromAbsolute(vector, self.chunkSize)
+	local chunk = self.chunks[packxyz(x, y, z)]
+	if chunk ~= nil then
+		local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
+		return chunk:atxyz(localx, localy, localz) --localCoords)
+	else
+		return nil -- return something else, possibly some enum.not_present
+	end
+end
+
+function VectorMap:set(vector, element)
+	local x, y, z = offsetFromAbsolute(vector, self.chunkSize)
+	local chunkHash = packxyz(x, y, z)
+	if self.chunks[chunkHash] == nil then 
+		self.chunks[chunkHash] = VectorChunk(chunkOffset)
+	end
+	local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
+	self.chunks[chunkHash]:setxyz(localx, localy, localz, element)
+end
+
 function VectorMap.__index(self, vector)
 	if utils.isInstance(vector, vec3) then
-		local chunkOffset = self:offsetFromAbsolute(vector)
-		local chunkHash = tostring(chunkOffset)
-		if self.chunks[chunkHash] ~= nil then
-			local localCoords = self:localFromAbsolute(vector, chunkOffset)
-			if self.chunks[chunkHash][localCoords] ~= nil then
-				return self.chunks[chunkHash][localCoords]
-			else
-				return nil -- return something else
-			end
-		else
-			return nil -- return something else, possibly some enum.not_present
-		end
+		return self:at(vector)
 	else
 		return getmetatable(self)[vector] -- dealing with something else than vector index
 	end
@@ -36,13 +67,7 @@ end
 
 function VectorMap.__newindex(self, vector, element)
 	if utils.isInstance(vector, vec3) then
-		local chunkOffset = self:offsetFromAbsolute(vector)
-		local chunkHash = tostring(chunkOffset)
-		if self.chunks[chunkHash] == nil then 
-			self.chunks[chunkHash] = VectorChunk(chunkOffset)
-		end
-		local localCoords = self:localFromAbsolute(vector, chunkOffset)
-		self.chunks[chunkHash][localCoords] = element
+		self:set(vector, element)
 	else
 		rawset(self, vector, element) -- dealing with something else than vector index
 	end
@@ -59,9 +84,9 @@ function VectorMap.__pairs(self)
 	local function iterator(self, index)
 		if chunkIterator then
 			local chunkVector = vec3.tovec3(chunkIndex)
-			index, element = chunkIterator(chunk, index and self:localFromAbsolute(index, chunkVector) or index)
+			index, element = chunkIterator(chunk, index and vec3(table.unpack({localFromAbsolute(index, chunkVector, self.chunkSize)})) or index)
 			if element then
-				return self:absoluteFromLocal(index, chunkVector), element
+				return absoluteFromLocal(index, chunkVector, self.chunkSize), element
 			else
 				chunkIndex, chunk = next(self.chunks, chunkIndex)
 				if chunk then
@@ -75,30 +100,6 @@ function VectorMap.__pairs(self)
 	return iterator, self, nil
 end
 
--- converts vector from global coordinates to local coordinates calculated using given offset
-function VectorMap:localFromAbsolute(vector, offset)
-    local localVector = vec3()
-    localVector.x = vector.x % (self.chunkSize.x)
-    localVector.y = vector.y % (self.chunkSize.y)
-	localVector.z = vector.z % (self.chunkSize.z)
-    return localVector
-end
 
-function VectorMap:absoluteFromLocal(vector, offset)
-	local absoluteVector = vec3()
-	absoluteVector.x = vector.x + self.chunkSize.x * offset.x
-	absoluteVector.y = vector.y + self.chunkSize.y * offset.y
-	absoluteVector.z = vector.z + self.chunkSize.z * offset.z
-	return absoluteVector
-end
-
--- calculates chunk offset from absolute coordinates
-function VectorMap:offsetFromAbsolute(vector)
-	local offset = vec3()
-	offset.x = math.floor(vector.x / self.chunkSize.x)
-	offset.y = math.floor(vector.y / self.chunkSize.y)
-	offset.z = math.floor(vector.z / self.chunkSize.z)
-	return offset
-end
 
 return VectorMap
