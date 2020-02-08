@@ -220,6 +220,8 @@ local function customTransferTo(toSlot, amount)
                 -- if both items have nbt tags (we only need to check one since shallowCompare would only return true if both items had nbt tags)
                 if robot.inventory.slots[selectedSlot].hasTag then
                     areStackable = robot.compareTo(toSlot, true)
+                elseif robot.inventory.slots[selectedSlot].maxSize == 1 then
+                    areStackable = false
                 end
 
                 if areStackable then
