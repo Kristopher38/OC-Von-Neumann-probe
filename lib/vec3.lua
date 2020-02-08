@@ -3,15 +3,9 @@ local vec3 = {}
 vec3.__index = vec3
 setmetatable(vec3, {__call = function(cls, _x, _y, _z)
 	local self = {}
-	if type(_x) == "table" then -- construct from table
-		self.x = _x[1] or 0
-		self.y = _x[2] or 0
-		self.z = _x[3] or 0
-	else -- construct from three coordinates
-		self.x = _x or 0
-		self.y = _y or 0
-		self.z = _z or 0
-	end
+	self.x = _x or 0
+	self.y = _y or 0
+	self.z = _z or 0
 
 	setmetatable(self, cls) -- cls is current table: vec3
 	return self
