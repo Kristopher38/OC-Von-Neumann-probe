@@ -31,16 +31,23 @@ end
 --[[ measures how much time execution of a function took, returns
 function return value, real execution time and cpu execution time,
 and additionally prints execution times --]]
-function utils.timeIt(func, ...)
+function utils.timeIt(doPrint, func, ...)
+	local args = {...}
+	if type(doPrint) == "function" then
+		table.insert(args, 1, func)
+		func = doPrint
+	end
 	local realBefore, cpuBefore = computer.uptime(), os.clock()
-	local returnVal = func(table.unpack({...}))
+	local returnVal = func(table.unpack(args))
 	local realAfter, cpuAfter = computer.uptime(), os.clock()
 
 	local realDiff = realAfter - realBefore
 	local cpuDiff = cpuAfter - cpuBefore
 
-	print(string.format('real%5dm%.3fs', math.floor(realDiff/60), realDiff%60))
-	print(string.format('cpu %5dm%.3fs', math.floor(cpuDiff/60), cpuDiff%60))
+	if doPrint then
+		print(string.format('real%5dm%.3fs', math.floor(realDiff/60), realDiff%60))
+		print(string.format('cpu %5dm%.3fs', math.floor(cpuDiff/60), cpuDiff%60))
+	end
 
 	return returnVal, realDiff, cpuDiff
 end
@@ -48,13 +55,20 @@ end
 --[[ measures how much energy execution of a function took, returns
 function return value, energy difference, and additionally prints
 execution times --]]
-function utils.energyIt(func, ...)
+function utils.energyIt(doPrint, func, ...)
+	local args = {...}
+	if type(doPrint) == "function" then
+		table.insert(args, 1, func)
+		func = doPrint
+	end
 	local before = computer.energy()
-	local returnVal = func(table.unpack({...}))
+	local returnVal = func(table.unpack(args))
 	local after = computer.energy()
 
 	local diff = after - before
-	print(string.format("Energy difference: %f", diff))
+	if doPrint then
+		print(string.format("Energy difference: %f", diff))
+	end
 
 	return returnVal, diff
 end
