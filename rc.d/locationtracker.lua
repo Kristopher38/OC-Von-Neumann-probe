@@ -6,19 +6,7 @@ local robot = component.robot
 local glasses = component.glasses
 local gpu = component.gpu
 
--- workaround for not yet mounted magic filesystem with robot.lua
-local apiRobot
--- search all filesystems for robot.lua
-for fs in filesystem.list("/mnt") do
-    local robotApiPath = filesystem.concat("/mnt", fs, "/lib/robot.lua")
-    if filesystem.exists(robotApiPath) then
-        -- if filesystem with robot.lua found, execute and cache it so other modules can use it
-        apiRobot = dofile(robotApiPath)
-        package.loaded.robot = apiRobot
-        break
-    end
-end
-
+local robotApi = require("robotapiload") -- workaround script for magic filesystem with robot.lua
 local nav = require("navigation")
 local vec3 = require("vec3")
 
@@ -72,7 +60,7 @@ end
 function start()
     robot.move = customMove
     robot.turn = customTurn
-    setmetatable(apiRobot, {__index = robot, __newindex = robot})
+    setmetatable(robotApi, {__index = robot, __newindex = robot})
 
     local w, h = gpu.getResolution()
     gpu.fill(1, 1, w, h, " ")
@@ -104,7 +92,7 @@ end
 function stop()
     robot.move = originalMove
     robot.turn = originalTurn
-    setmetatable(apiRobot, nil)
+    setmetatable(robotApi, nil)
 
     robot.position = nil
     robot.orientation = nil
