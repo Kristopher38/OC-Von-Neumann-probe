@@ -19,6 +19,15 @@ function utils.hasDuplicateValue(tab, value)
 	return false
 end
 
+function utils.hasKey(tab, key)
+	for k, v in pairs(tab) do
+		if k == key then
+			return true
+		end
+	end
+	return false
+end
+
 --[[ measures how much time execution of a function took, returns
 function return value, real execution time and cpu execution time,
 and additionally prints execution times --]]
@@ -90,6 +99,21 @@ function utils.deepCopy(obj, seen)
 		res[utils.deepCopy(k, s)] = utils.deepCopy(v, s)
 	end
 	return res
+end
+
+function utils.shallowCompare(obj1, obj2, ignoreKeys)
+	ignoreKeys = ignoreKeys or {}
+	for k, v in pairs(obj1) do
+		if not utils.hasDuplicateValue(ignoreKeys, k) and (obj2[k] == nil or obj2[k] ~= v) then
+			return false
+		end
+	end
+	for i, v in ipairs(obj1) do
+		if obj2[i] == nil or obj2[i] ~= v then
+			return false
+		end
+	end
+	return true
 end
 
 return utils
