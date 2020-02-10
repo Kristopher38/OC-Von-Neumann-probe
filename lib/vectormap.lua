@@ -15,25 +15,27 @@ setmetatable(VectorMap, {__call = function(cls, _chunkSize)
 	return self
 end })
 
--- converts vector from global coordinates to local coordinates calculated using given offset
+-- converts vector from global coordinates to local coordinates in a chunk calculated using given chunk offset
 local function localFromAbsolute(vector, offset, chunkSize)
     return vector.x % (chunkSize.x), vector.y % (chunkSize.y), vector.z % (chunkSize.z)
 end
 
+-- calculates global coordinates from local coordinates in a chunk using given chunk offset
 local function absoluteFromLocal(vector, offset, chunkSize)
-	return vec3(vector.x + chunkSize.x * offset.x, vector.y + chunkSize.y * offset.y, vector.z + chunkSize.z * offset.z)
+	return vector.x + chunkSize.x * offset.x, vector.y + chunkSize.y * offset.y, vector.z + chunkSize.z * offset.z
 end
 
--- calculates chunk offset from absolute coordinates
+-- calculates chunk offset from global coordinates
 local function offsetFromAbsolute(vector, chunkSize)
 	return math.floor(vector.x / chunkSize.x), math.floor(vector.y / chunkSize.y), math.floor(vector.z / chunkSize.z)
 end
 
-local function packxyz(_x, _y, _z)
-	local x = bit32.lrotate(bit32.extract(_x, 0, 12), 20)
-	local y = bit32.lrotate(bit32.extract(_y, 0, 8), 12)
-	local z = bit32.extract(_z, 0, 12)
-	return bit32.bor(x, y, z)
+local function packxyz(x, y, z)
+	return string.pack("<LLL", x, y, z)
+end
+
+local function unpackxyz(number)
+	return string.unpack("<LLL", number)
 end
 
 function VectorMap:at(vector)
@@ -41,7 +43,7 @@ function VectorMap:at(vector)
 	local chunk = self.chunks[packxyz(x, y, z)]
 	if chunk ~= nil then
 		local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
-		return chunk:atxyz(localx, localy, localz) --localCoords)
+		return chunk:atxyz(localx, localy, localz)
 	else
 		return nil -- return something else, possibly some enum.not_present
 	end
@@ -55,6 +57,27 @@ function VectorMap:set(vector, element)
 	end
 	local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
 	self.chunks[chunkHash]:setxyz(localx, localy, localz, element)
+end
+
+function VectorMap:saveChunk(coords)
+	local chunkx, chunky, chunkz = offsetFromAbsolute(coords, self.chunkSize)
+	local chunkHash = packxyz(chunkx, chunky, chunkz)
+	data = string.pack("<LLL", map.chunkSize.x, map.chunkSize.y, map.chunkSize.z)
+	for x = 0, map.chunkSize.x - 1 do
+		for y = 0, map.chunkSize.y - 1 do
+			for z = 0, map.chunkSize.z - 1 do
+				local block = map.chunks[chunkHash]:atxyz(x, y, z)
+				if block == nil then
+					block = -1
+				end
+				data = data .. string.pack("<f", block)
+			end
+		end
+	end
+	local filePath = "/home/chunks/" .. tostring(vec3(chunkx, chunky, chunkz)) .. ".chnk"
+	local chunkFile = io.open(filePath, "w")
+	chunkFile:write(data)
+	chunkFile:close()
 end
 
 function VectorMap.__index(self, vector)
@@ -83,10 +106,10 @@ function VectorMap.__pairs(self)
 	end
 	local function iterator(self, index)
 		if chunkIterator then
-			local chunkVector = vec3.tovec3(chunkIndex)
-			index, element = chunkIterator(chunk, index and vec3(table.unpack({localFromAbsolute(index, chunkVector, self.chunkSize)})) or index)
+			local chunkVector = vec3(unpackxyz(chunkIndex))
+			index, element = chunkIterator(chunk, index and vec3(localFromAbsolute(index, chunkVector, self.chunkSize)) or index)
 			if element then
-				return absoluteFromLocal(index, chunkVector, self.chunkSize), element
+				return vec3(absoluteFromLocal(index, chunkVector, self.chunkSize)), element
 			else
 				chunkIndex, chunk = next(self.chunks, chunkIndex)
 				if chunk then

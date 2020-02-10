@@ -1,4 +1,3 @@
-local bit32 = require("bit32")
 local vec3 = require("vec3")
 local utils = require("utils")
 
@@ -11,36 +10,19 @@ setmetatable(VectorChunk, {__call = function(cls)
     return self
 end })
 
---[[ Packs single vec3 in range [0, 4095] x [0, 255] x [0, 4095] into a single integer.
-The packed format is [x: 12 bits, y: 8 bits, z: 12 bits] Note: any non-integer value 
-automatically gets rounded to the nearest integer --]]
-local function pack(vector)
-    local x = bit32.lrotate(bit32.extract(vector.x, 0, 12), 20)
-    local y = bit32.lrotate(bit32.extract(vector.y, 0, 8), 12)
-    local z = bit32.extract(vector.z, 0, 12)
-    return bit32.bor(x, y, z)
+--[[ Packs x, y, z values in range x: [0, 4095], y: [0, 255], z: [0, 4095]
+into a single integer. The packed format is [x: 12 bits, y: 8 bits, z: 12 bits] --]]
+local function packxyz(x, y, z)
+    return ((x & 0x00000FFF) << 20) | ((y & 0x000000FF) << 12) | (z & 0x00000FFF)
 end
 
--- does the same as above but uses separate arguments for x, y, z for extra performance
-local function packxyz(_x, _y, _z)
-    local x = bit32.lrotate(bit32.extract(_x, 0, 12), 20)
-    local y = bit32.lrotate(bit32.extract(_y, 0, 8), 12)
-    local z = bit32.extract(_z, 0, 12)
-    return bit32.bor(x, y, z)
-end
-
--- unpacks vector as a single integer into a vec3 object
-local function unpack(number)
-    return vec3(bit32.extract(number, 20, 12), bit32.extract(number, 12, 8), bit32.extract(number, 0, 12))
-end
-
--- does the same as above but returns separate values for x, y, z for extra performance
+--- unpacks vector as a single integer into x, y, z values
 local function unpackxyz(number)
-    return bit32.extract(number, 20, 12), bit32.extract(number, 12, 8), bit32.extract(number, 0, 12)
+    return (number & 0xFFF00000) >> 20, (number & 0x000FF000) >> 12, number & 0x00000FFF
 end
 
 function VectorChunk:at(vector)
-    return rawget(self, pack(vector))
+    return rawget(self, packxyz(vector.x, vector.y, vector.z))
 end
 
 function VectorChunk:atxyz(x, y, z)
@@ -48,7 +30,7 @@ function VectorChunk:atxyz(x, y, z)
 end
 
 function VectorChunk:set(vector, element)
-    rawset(self, pack(vector), element)
+    rawset(self, packxyz(vector.x, vector.y, vector.z), element)
 end
 
 function VectorChunk:setxyz(x, y, z, element)
@@ -74,9 +56,9 @@ end
 function VectorChunk.__pairs(self)
     local function statelessIterator(self, index)
         local element
-        index, element = next(self, index and pack(index) or index)
+        index, element = next(self, index and packxyz(index.x, index.y, index.z) or index)
         if element then
-            return unpack(index), element
+            return vec3(unpackxyz(index)), element
         end
     end
 
