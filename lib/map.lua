@@ -6,7 +6,7 @@ local vec3 = require("vec3")
 local VectorMap = require("vectormap")
 local blockType = require("blocktype")
 
-local map = VectorMap(vec3(256, 128, 256))
+local map = VectorMap(vec3(16, 16, 16))
 
 function map.assumeBlockType(hardness)
 	if hardness ~= nil then
