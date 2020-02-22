@@ -5,10 +5,15 @@ local inspect = require("inspect")
 
 local VectorMap = {}
 VectorMap.__index = VectorMap
-setmetatable(VectorMap, {__call = function(cls, _chunkSize)
+VectorMap.fileHeader = "<c4lllc1"
+VectorMap.magicString = "CHNK"
+VectorMap.extension = "chnk"
+VectorMap.chunkFolder= "/home/chunks/"
+setmetatable(VectorMap, {__call = function(cls, _chunkSize, _storedType)
 	local self = {}
 	self.chunks = {}
 	self.chunkSize = _chunkSize or vec3(16, 16, 16)
+	self.storedType = _storedType or "f"
 	-- order is important since we're overriding __newindex method!
 	-- setmetatable has to be called after setting fields
 	setmetatable(self, cls) -- cls is current table: VectorMap
@@ -31,11 +36,11 @@ local function offsetFromAbsolute(vector, chunkSize)
 end
 
 local function packxyz(x, y, z)
-	return string.pack("<LLL", x, y, z)
+	return string.pack("<lll", x, y, z)
 end
 
 local function unpackxyz(number)
-	return string.unpack("<LLL", number)
+	return string.unpack("<lll", number)
 end
 
 function VectorMap:at(vector)
@@ -59,25 +64,60 @@ function VectorMap:set(vector, element)
 	self.chunks[chunkHash]:setxyz(localx, localy, localz, element)
 end
 
+function VectorMap:getPackFormat(dataFormat)
+	return "<" .. dataFormat
+end
+
+function VectorMap:getFileName(chunkCoords)
+	return self.chunkFolder .. tostring(chunkCoords) .. "." .. self.extension
+end
+
 function VectorMap:saveChunk(coords)
-	local chunkx, chunky, chunkz = offsetFromAbsolute(coords, self.chunkSize)
-	local chunkHash = packxyz(chunkx, chunky, chunkz)
-	data = string.pack("<LLL", map.chunkSize.x, map.chunkSize.y, map.chunkSize.z)
-	for x = 0, map.chunkSize.x - 1 do
-		for y = 0, map.chunkSize.y - 1 do
-			for z = 0, map.chunkSize.z - 1 do
-				local block = map.chunks[chunkHash]:atxyz(x, y, z)
-				if block == nil then
-					block = -1
-				end
-				data = data .. string.pack("<f", block)
+	local chunkCoords = vec3(offsetFromAbsolute(coords, self.chunkSize))
+	local chunkHash = packxyz(chunkCoords.x, chunkCoords.y, chunkCoords.z)
+	local data = string.pack(self.fileHeader, self.magicString, self.chunkSize.x, self.chunkSize.y, self.chunkSize.z, self.storedType)
+	local packFormat = self:getPackFormat(self.storedType)
+	for x = 0, self.chunkSize.x - 1 do
+		for y = 0, self.chunkSize.y - 1 do
+			for z = 0, self.chunkSize.z - 1 do
+				local block = self.chunks[chunkHash]:atxyz(x, y, z)
+				data = data .. string.pack(packFormat, block and block or -1)
 			end
 		end
 	end
-	local filePath = "/home/chunks/" .. tostring(vec3(chunkx, chunky, chunkz)) .. ".chnk"
+	
+	local filePath = self:getFileName(chunkCoords)
 	local chunkFile = io.open(filePath, "w")
 	chunkFile:write(data)
 	chunkFile:close()
+end
+
+function VectorMap:loadChunk(coords)
+	local chunkCoords = vec3(offsetFromAbsolute(coords, self.chunkSize))
+	local chunkHash = packxyz(chunkCoords.x, chunkCoords.y, chunkCoords.z)
+	local filePath = self:getFileName(chunkCoords)
+	local chunkFile = io.open(filePath, "r")
+	
+	if io.type(chunkFile) == "file" then
+		local magicString, chunkSizex, chunkSizey, chunkSizez, dataFormat = string.unpack(self.fileHeader, chunkFile:read(8))
+
+		if magicString == self.magicString and
+		chunkSizex == self.chunkSize.x and 
+		chunkSizey == self.chunkSize.y and 
+		chunkSizez == self.chunkSize.z then
+			local packFormat = self:getPackFormat(dataFormat)
+			local formatSize = string.packsize(packFormat)
+			
+			for x = 0, self.chunkSize.x - 1 do
+				for y = 0, self.chunkSize.y - 1 do
+					for z = 0, self.chunkSize.z - 1 do
+						local block = string.unpack(packFormat, chunkFile:read(formatSize))
+						self.chunks[chunkHash]:setxyz(x, y, z, block ~= -1 and block or nil)
+					end
+				end
+			end
+		end
+	end
 end
 
 function VectorMap.__index(self, vector)
@@ -122,7 +162,5 @@ function VectorMap.__pairs(self)
 
 	return iterator, self, nil
 end
-
-
 
 return VectorMap
