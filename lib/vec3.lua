@@ -28,13 +28,10 @@ function vec3.__tostring(self)
 end
 
 function vec3.tovec3(str)
-	local vector = vec3()
-	local delimx = string.find(str, ",")
-	local delimy = string.find(str, ",", delimx + 1)
-	local delimz = string.find(str, "]", delimy + 1)
-	vector.x = tonumber(string.sub(str, 2, delimx - 1))
-	vector.y = tonumber(string.sub(str, delimx + 2, delimy - 1))
-	vector.z = tonumber(string.sub(str, delimy + 2, delimz - 1))
+	local vector = vec3(string.match(str, "%[(%-?%d+%.?%d-), (%d+%.?%d-), (%-?%d+%.?%d-)%]"))
+	vector.x = tonumber(vector.x)
+	vector.y = tonumber(vector.y)
+	vector.z = tonumber(vector.z)
 	return vector
 end
 
