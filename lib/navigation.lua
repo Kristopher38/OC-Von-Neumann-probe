@@ -173,14 +173,15 @@ end
 Returns path as a table of vec3 coordinates from goal to start block (without the starting block itself)
 and cost to reach the goal block --]]
 function navigation.aStar(goal, start, startOrientation, cost, heuristic)
+	local startMem = utils.freeMemory()
 	start = start or robot.position
 	startOrientation = startOrientation or robot.orientation
 	cost = cost or navigation.costTime
 	heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
-	local cameFrom = VectorChunk()
-	local costSoFar = VectorChunk()
-	local orientation = VectorChunk()
+	local cameFrom = VectorChunk(robot.position, true, true)
+	local costSoFar = VectorChunk(robot.position, true)
+	local orientation = VectorChunk(robot.position, true)
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
@@ -198,7 +199,7 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
         -- for each neighbour in our currentNode neighbours
 		for i, nextNode in pairs(navigation.neighbours(currentNode)) do
             local newCost = costSoFar[currentNode] + cost(currentNode, nextNode, orientation[currentNode])
-            -- if we haven't visited the block (node) yet or it has smaller cost than previously
+			-- if we haven't visited the block (node) yet or it has smaller cost than previously
 			if cameFrom[nextNode] == nil or 
                newCost < costSoFar[nextNode] then
                 -- put it in the open blocks (nodes) set to expand later and update the tables with cost, path and orientation
@@ -217,6 +218,12 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 		table.insert(path, currentNode)
 		currentNode = cameFrom[currentNode]
 	end
+
+	local endMem = utils.freeMemory()
+	print("Starting memory:", startMem)
+	print("Ending memory: ", endMem)
+	print("Memory used:", startMem - endMem)
+
 	return path, costSoFar[goal]
 end
 
