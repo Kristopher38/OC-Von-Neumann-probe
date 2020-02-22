@@ -8,7 +8,7 @@ local sides = require("sides")
 local vec3 = require("vec3")
 local VectorChunk = require("vectorchunk")
 
-local v = VectorMap(vec3(32, 32, 32))
+local v = VectorChunk(vec3(), true)
 --local v = VectorChunk()
 
 local x = 31
@@ -24,7 +24,7 @@ function fill()
                 local vector = vec3(x, y, z)
                 local randomnum = math.random(-64, 64)
                 local real, cpu
-                _, real, cpu = utils.timeIt(false, v.set, v, vector, randomnum)
+                _, real, cpu = utils.timeIt(false, v.set, v, vector, vec3(64, 23, 734))
                 totalTimeReal = totalTimeReal + real
                 totalTimeCpu = totalTimeCpu + cpu
                 --v[vector] = randomnum
@@ -35,7 +35,7 @@ function fill()
             end
         end
     end
-    return totalTimeReal, totalTimeCpu
+    return totalTimeCpu
 end
 
 function read()
@@ -54,11 +54,19 @@ function read()
             end
         end
     end
-    return totalTimeReal, totalTimeCpu
+    return totalTimeCpu
 end
 
-print(fill())
-print(read())
+local fillavg = 0
+local readavg = 0
+for i = 1, 10 do
+    fillavg = fillavg + fill()
+    readavg = readavg + read()
+    os.sleep(0)
+end
+
+print("Fill:", fillavg/10)
+print("Read:", readavg/10)
 
 ::exit::
 local elemCount = x*y*z
