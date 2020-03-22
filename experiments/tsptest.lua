@@ -66,7 +66,7 @@ end
 print("start: ", maxDistNodeA)
 print("end: ", maxDistNodeB)
 
-local tsppath = utils.timeIt(nav.tspGreedy, ores, maxDistNodeA, maxDistNodeB)
+local tsppath = utils.timeIt(nav.shortestTour, ores, maxDistNodeA, maxDistNodeB)
 --tsppath = utils.timeIt(nav.tspTwoOpt, tsppath, vec3(58, 70, 813), vec3(83, 72, 812))
 --print("best distance: ", bestdist)
 

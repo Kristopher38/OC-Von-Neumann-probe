@@ -80,6 +80,14 @@ function VectorChunk.__newindex(self, vec, elem)
     end
 end
 
+function VectorChunk.__len(self)
+    local len = 0
+    for k, v in pairs(self) do
+        len = len + 1
+    end
+    return len
+end
+
 function VectorChunk.__pairs(self)
     local function statelessIterator(self, index)
         local element

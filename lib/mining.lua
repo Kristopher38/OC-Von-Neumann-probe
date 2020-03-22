@@ -10,6 +10,7 @@ local map = require("map")
 local component = require("component")
 local sides = require("sides")
 local geolyzer = component.geolyzer
+local robotComponent = component.robot
 
 local debug = require("debug")
 local inspect = require("inspect")
@@ -58,19 +59,6 @@ function mining.oreLumpsFromOres(oreVectors)
     return lumps
 end
 
-function mining.getNearestOre(oreLump)
-    local min = math.huge
-    local minOre
-    for vector, block in pairs(oreLump) do
-        local heuristicDistance = nav.heuristicManhattan(robot.position, vector)
-        if heuristicDistance < min then
-            min = heuristicDistance
-            minOre = vector
-        end
-    end
-    return minOre, min
-end
-
 function mining.scanOre(oreSide)
     local batch = ScanBatch()
 	local quads = { ["minecraft:coal_ore"] = {
@@ -104,11 +92,15 @@ function mining.mineOreLump(oreSide)
     print("Scanning ore lump...")
     local oresScanBatch = mining.scanOre(oreSide)
     local ores = oresScanBatch:query(blockType.ore)
-    while #ores > 0 do
-        local nearestOre = mining.getNearestOre(ores)
-        nav.goTo(nearestOre, true)
-        robot.swing(nav.relativeOrientation(robot.position, ore))
-        ores[nearestOre] = nil
+    local neighbourOreLumps = mining.oreLumpsFromOres(ores)
+    local currentOreLump = neighbourOreLumps[nav.nearestBlock(utils.keys(neighbourOreLumps))]
+    if currentOreLump then
+        while #currentOreLump > 0 do
+            local nearestOre = utils.timeIt(nav.nearestBlock, currentOreLump, robot.position, nav.heuristicAStar)
+            nav.goTo(nearestOre, true)
+            robotComponent.swing(nav.relativeOrientation(robot.position, nearestOre))
+            currentOreLump[nearestOre] = nil
+        end
     end
     --[[ print("Calculating fastest ore tour...")
     local oreTour = nav.tspTwoOpt(nav.tspGreedy(utils.keys(ores)))
@@ -142,10 +134,17 @@ function mining.mineChunk()
     print("Calculating ore lumps...")
     local oreLumps = mining.oreLumpsFromOres(scanBatch:query(blockType.ore))
     print("Calculating fastest tour...")
-    local oreLumpsTour = nav.tspTwoOpt(nav.tspGreedy(utils.keys(oreLumps)))
+    local oreLumpsTour = nav.shortestTour(utils.keys(oreLumps), robot.position, startPos)
+    print(inspect(oreLumpsTour))
+    -- delete last item - starting position
+    table.remove(oreLumpsTour, #oreLumpsTour)
+    table.remove(oreLumpsTour, 1)
     print("Mining lumps...")
-    for i, oreLump in pairs(oreLumpsTour) do
-        local nearestOre = mining.getNearestOre(oreLumps[oreLump])
+    for i, oreLump in ipairs(oreLumpsTour) do
+        local nearestOre
+        repeat
+            nearestOre = nav.nearestBlock(oreLumps[oreLump])
+        until map.assumeBlockType(map[nearestOre]) == blockType.ore
         print("Going to the nearest ore (of ore lump on route): " .. tostring(nearestOre))
         nav.goTo(nearestOre, true)
         mining.mineOreLump(nav.relativeOrientation(robot.position, nearestOre))

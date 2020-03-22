@@ -136,6 +136,14 @@ function VectorMap.__newindex(self, vector, element)
 	end
 end
 
+function VectorMap.__len(self)
+	local len = 0
+	for k, v in pairs(self) do
+		len = len + 1
+	end
+	return len
+end
+
 function VectorMap.__pairs(self)
 	local chunk
 	local chunkIterator

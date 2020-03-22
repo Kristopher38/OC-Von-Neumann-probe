@@ -185,6 +185,11 @@ function navigation.heuristicEuclidean(fromNode, toNode)
 	return math.sqrt((toNode.x - fromNode.x)^2 + (toNode.y - fromNode.y)^2 + (toNode.z - fromNode.z)^2)
 end
 
+function navigation.heuristicAStar(fromNode, toNode)
+	local _, cost = navigation.aStar(toNode, fromNode)
+	return cost
+end
+
 --[[ returns cost for moving between two adjacent blocks (nodes), taking into account
 target block's hardness which requires mining it and possible turning cost --]]
 function navigation.costTime(fromNode, toNode, fromOrientation, ignoreWalking, ignoreTurning, ignoreBreaking) -- time-based cost function
@@ -217,7 +222,7 @@ end
 Returns path as a table of vec3 coordinates from goal to start block (without the starting block itself)
 and cost to reach the goal block --]]
 function navigation.aStar(goal, start, startOrientation, cost, heuristic)
-	local startMem = utils.freeMemory()
+	--local startMem = utils.freeMemory()
 	start = start or robot.position
 	startOrientation = startOrientation or robot.orientation
 	cost = cost or navigation.costTime
@@ -259,13 +264,13 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 	local path = {}
 	local currentNode = goal
 	while currentNode ~= start do
-		debug.drawCube(currentNode, "green")
+		--debug.drawCube(currentNode, "green")
 		table.insert(path, currentNode)
 		currentNode = cameFrom[currentNode]
 	end
-	debug.commit()
+	--debug.commit()
 
-	local endMem = utils.freeMemory()
+	--local endMem = utils.freeMemory()
 	--[[ print("Starting memory:", startMem)
 	print("Ending memory: ", endMem)
 	print("Memory used:", startMem - endMem) ]]
@@ -403,6 +408,38 @@ function navigation.tspTwoOpt(tour, startNode, endNode)
 	end
 
 	return optimizedTour, bestDistance
+end
+
+function navigation.shortestTour(nodes, startNode, endNode)
+	return navigation.tspTwoOpt(navigation.tspGreedy(nodes), startNode, endNode)
+end
+
+-- finds nearest block to fromNode in a VectorMap or table of vectors
+function navigation.nearestBlock(nodes, fromNode, heuristic)
+	fromNode = fromNode or robot.position
+	heuristic = heuristic or navigation.heuristicManhattan
+    local minDist = math.huge
+	local minVector
+
+	local updateMin = function(fromNode, vector)
+		local heuristicDistance = heuristic(fromNode, vector)
+		if heuristicDistance < minDist then
+			minDist = heuristicDistance
+			minVector = vector
+		end
+	end
+
+	-- TODO: implement using vectorchunk and vectormap as an array and remove those isInstance checks
+	if utils.isInstance(nodes, VectorChunk) or utils.isInstance(nodes, VectorMap) then
+		for vector, block in pairs(nodes) do
+			updateMin(fromNode, vector)
+		end
+	else
+		for i, vector in ipairs(nodes) do
+			updateMin(fromNode, vector)
+		end
+	end
+	return minVector, minDist
 end
 
 --[[ performs robot turning with minimal number of turns, either specifying direction

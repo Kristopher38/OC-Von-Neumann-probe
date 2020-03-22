@@ -42,6 +42,7 @@ local debugCubes = VectorMap()
 local debugCubeColors = {}
 local debugShapes = {}
 function debug.drawCube(vector, color)
+	color = color or "red"
 	debugCubes[vector] = color
 	debugCubeColors[color] = true
 end
@@ -173,6 +174,9 @@ function debug.drawText(vector, text, color, opacity, fontSize)
 end
 
 function debug.clearWidgets()
+	debugCubes = VectorMap()
+	debugCubeColors = {}
+	debugShapes = {}
     glasses.removeAll()
 end
 
