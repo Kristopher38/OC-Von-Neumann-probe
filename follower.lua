@@ -16,7 +16,7 @@ glasses.setRenderPosition("absolute")
 glasses.removeAll()
 print("Mapping...")
 local batch = ScanBatch()
-batch:scanAround(vec3(17, 17, 17))
+batch:scanAround(vec3(8, 8, 8))
 print("Finished mapping sorrounding area")
 while true do
 	local EVENT, ID, USER, PLAYER_POSITION_X, PLAYER_POSITION_Y, PLAYER_POSITION_Z, 
@@ -27,5 +27,6 @@ while true do
 	if target ~= robot.position then
 		glasses.removeAll()
 		utils.timeIt(nav.goTo, target, true)
+		--utils.timeIt(map.saveChunk, robot.position)
 	end
 end

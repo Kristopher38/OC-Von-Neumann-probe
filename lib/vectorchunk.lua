@@ -36,6 +36,14 @@ function VectorChunk:atxyz(x, y, z)
     return self.packValues and (value and vec3(unpackxyz(value, self.offset)) or nil) or value
 end
 
+--[[ function VectorChunk:atIndex(index)
+    return vec3(unpackxyz(self.data[index]))
+end ]]
+
+--[[ function VectorChunk:atIndexXyz(idx)
+    return unpackxyz(self.data[vec])
+end ]]
+
 function VectorChunk:set(vec, elem)
     rawset(self.data, packxyz(vec.x, vec.y, vec.z, self.offset), self.packValues and packxyz(elem.x, elem.y, elem.z, self.offset) or elem)
 end
@@ -44,9 +52,19 @@ function VectorChunk:setxyz(x, y, z, elem)
     rawset(self.data, packxyz(x, y, z, self.offset), self.packValues and packxyz(elem.x, elem.y, elem.z, self.offset) or elem)
 end
 
+--[[ function VectorChunk:insert(vec)
+    table.insert(self.data, packxyz(vec.x, vec.y, vec.z, self.offset))
+end ]]
+
+--[[ function VectorChunk:setIndex(index, vec)
+    self.data[index] = packxyz(vec.x, vec.y, vec.z, self.offset)
+end ]]
+
 function VectorChunk.__index(self, vec)
     if utils.isInstance(vec, vec3) then
         return self:at(vec)
+    --[[ elseif type(vec) == "number" then
+        return self:atIndex(vec) ]]
     else
         return getmetatable(self)[vec] -- gets the metatable with methods and metamethods
     end
@@ -55,6 +73,8 @@ end
 function VectorChunk.__newindex(self, vec, elem)
     if utils.isInstance(vec, vec3) then
         self:set(vec, elem)
+    --[[ elseif type(vec) == "number" then
+        self:setIndex(vec, elem) -- vec is index, elem is the vector to be set ]]
     else
         rawset(self, vec, elem)
     end
@@ -71,5 +91,17 @@ function VectorChunk.__pairs(self)
 
     return statelessIterator, self, nil
 end
+
+--[[ function VectorChunk.__ipairs(self)
+    local function statelessIterator(self, index)
+        index = index + 1
+        local element = self.data[index]
+        if element then
+            return index, vec3(unpackxyz(element, self.offset))
+        end
+    end
+
+    return statelessIterator, self, 0
+end ]]
 
 return VectorChunk

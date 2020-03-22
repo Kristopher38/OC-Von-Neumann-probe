@@ -6,12 +6,12 @@ local vec3 = require("vec3")
 local function testhasDuplicateValue()
 	local t = {5, "foo", vec3(6, 3, -4), "bar", vec3({6, 3, 0}), true, -7, print}
 	
-	local numberTest = utils.hasDuplicateValue(t, 5) and utils.hasDuplicateValue(t, -7) and not utils.hasDuplicateValue(t, -4)
-	local stringTest = utils.hasDuplicateValue(t, "foo") and utils.hasDuplicateValue(t, "bar") and not utils.hasDuplicateValue(t, "baz")
-	local boolTest = utils.hasDuplicateValue(t, true) and not utils.hasDuplicateValue(t, false)
-	local nilTest = not utils.hasDuplicateValue(t, nil)
-	local functionTest = utils.hasDuplicateValue(t, print) and not utils.hasDuplicateValue(t, table.insert)
-	local customTypeTest = utils.hasDuplicateValue(t, vec3(6, 3, -4)) and utils.hasDuplicateValue(t, vec3({6, 3, 0})) and not utils.hasDuplicateValue(t, vec3(5, -3, 12))
+	local numberTest = utils.hasValue(t, 5) and utils.hasValue(t, -7) and not utils.hasValue(t, -4)
+	local stringTest = utils.hasValue(t, "foo") and utils.hasValue(t, "bar") and not utils.hasValue(t, "baz")
+	local boolTest = utils.hasValue(t, true) and not utils.hasValue(t, false)
+	local nilTest = not utils.hasValue(t, nil)
+	local functionTest = utils.hasValue(t, print) and not utils.hasValue(t, table.insert)
+	local customTypeTest = utils.hasValue(t, vec3(6, 3, -4)) and utils.hasValue(t, vec3({6, 3, 0})) and not utils.hasValue(t, vec3(5, -3, 12))
 	return numberTest and stringTest and boolTest and nilTest and functionTest and customTypeTest
 end
 

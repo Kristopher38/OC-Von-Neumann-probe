@@ -5,12 +5,17 @@ local robot = require("robot")
 local map = require("map")
 local vec3 = require("vec3")
 local blockType = require("blockType")
+local VectorChunk = require("vectorchunk")
+local VectorMap = require("vectormap")
+local utils = require("utils")
+
+local debug = require("debug")
 
 local ScanBatch = {}
 ScanBatch.__index = ScanBatch
 setmetatable(ScanBatch, {__call = function(cls)
 	local self = {}
-	self.scans = {}
+	self.scans = VectorChunk(robot.position, true, true)
 	setmetatable(self, cls) -- cls = PriorityQueue
 	return self
 end })
@@ -31,6 +36,7 @@ function ScanBatch:scanAround(sizeVector)
             end
         end
     end
+    self.scans[robot.position + vec3(startx, starty, startz)] = sizeVector
 end
 
 --[[ scan the provided quad, note that w, d and h should be positive nonzero because of
@@ -47,30 +53,85 @@ function ScanBatch:scanQuad(offsetVector, sizeVector)
 		for z = 0, sizeVector.z - 1 do
             for x = 0, sizeVector.x - 1 do
 				map[robot.position + offsetVector + vec3(x, y, z)] = scanData[i]
-				i = i + 1
+                if map.assumeBlockType(scanData[i]) == blockType.ore then
+                    debug.drawCube(robot.position + offsetVector + vec3(x, y, z), "red")
+                end
+                i = i + 1
 			end
 		end
-	end
-	table.insert(self.scans, {robot.position + offsetVector, sizeVector})
+    end
+    debug.commit()
+    self.scans[robot.position + offsetVector] = sizeVector
 end
     
+function ScanBatch:scanLayer()
+    local quads = {
+		{vec3(0, 0, -8), vec3(8, 1, 8)},
+		{vec3(0, 0, 0), vec3(8, 1, 8)},
+		{vec3(-8, 0, -8), vec3(8, 1, 8)},
+		{vec3(-8, 0, 0), vec3(8, 1, 8)}
+	}
+	for i, quad in ipairs(quads) do
+		self:scanQuad(table.unpack(quad))
+	end
+end
+
 function ScanBatch:query(_blockType)
-    local results = {}
-    for i, scan in ipairs(self.scans) do
-        local offsetVector = scan[1]
-        local sizeVector = scan[2]
+    if type(_blockType) ~= "table" then
+        _blockType = {_blockType}
+    end
+    local results = VectorMap()
+    for offsetVector, sizeVector in pairs(self.scans) do
         for x = 0, sizeVector.x - 1 do
             for y = 0, sizeVector.y - 1 do
                 for z = 0, sizeVector.z - 1 do
                     local blockVector = vec3(offsetVector.x + x, offsetVector.y + y, offsetVector.z + z)
-                    if map.assumeBlockType(map[blockVector]) == _blockType then
-                        table.insert(results, blockVector)
+                    local assumedBlock = map.assumeBlockType(map[blockVector])
+                    if utils.hasValue(_blockType, assumedBlock) then
+                        results[blockVector] = assumedBlock
                     end
                 end
             end
         end
     end
     return results
+end
+
+function ScanBatch:queryPairs(_blockType)
+    if type(_blockType) ~= "table" then
+        _blockType = {_blockType}
+    end
+
+    local scansIterator = pairs(self.scans)
+    local offsetVector, sizeVector = scansIterator(self.scans, nil)
+    local x, y, z = 0, 0, 0
+    local function iterator(self, index)
+        while offsetVector do
+            if x < sizeVector.x then
+                if y < sizeVector.y then
+                    if z < sizeVector.z then
+                        local blockVector = vec3(offsetVector.x + x, offsetVector.y + y, offsetVector.z + z)
+                        local assumedBlock = map.assumeBlockType(map[blockVector])
+                        z = z + 1
+                        if utils.hasValue(_blockType, assumedBlock) then
+                            return blockVector, assumedBlock
+                        end
+                    else
+                        z = 0
+                        y = y + 1
+                    end
+                else
+                    y, z = 0, 0
+                    x = x + 1
+                end
+            else
+                x, y, z = 0, 0, 0
+                offsetVector, sizeVector = scansIterator(self.scans, offsetVector)
+            end
+        end
+    end
+
+    return iterator, self, nil
 end
 
 return ScanBatch

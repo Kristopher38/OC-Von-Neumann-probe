@@ -21,7 +21,7 @@ facingSide. offsetVec is a vector with three fields:
 2. moving up/down - positive is up, negative is down
 3. moving right/left - positive is right, negative is left --]]
 function navigation.coordsFromOffset(coordsVec, offsetVec, facingSide)
-	facingSide = facingSide or sides.posx
+	facingSide = facingSide or robot.orientation
 	local y = coordsVec.y + offsetVec.y
 	
 	if facingSide == sides.posz then -- equivalent to sides.south
@@ -40,8 +40,13 @@ end
 
 --[[ calculates orientation robot has to be in to go from fromNode to toNode,
 assuming the blocks (nodes) are adjacent to each other (in other words:
-orientation that robot will have after moving from one block to another) --]]
-function navigation.calcOrientation(fromNode, toNode, fromOrientation)
+orientation that robot will have after moving from one block to another)
+respectVertical decides whether to return identical orientation as fromOrientation
+since it doesn't change the robot's orientation, or respect vertical changes and
+return sides.negy or sides.posy when nodes are vertically adjacent --]]
+function navigation.calcOrientation(fromNode, toNode, fromOrientation, respectVertical)
+	fromOrientation = fromOrientation or robot.orientation
+	respectVertical = respectVertical or false
 	local dx = toNode.x - fromNode.x
 	local dy = toNode.y - fromNode.y
 	local dz = toNode.z - fromNode.z
@@ -54,7 +59,13 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation)
 	elseif dz == 1 then
 		return sides.posz -- equivalent to sides.south
 	elseif dy ~= 0 then
-		return fromOrientation -- if we're moving vertically orientation stays the same
+		if not respectVertical then
+			return fromOrientation -- if we're moving vertically orientation stays the same
+		elseif dy == -1 then
+			return sides.negy
+		elseif dy == 1 then
+			return sides.posy
+		end
 	else
 		error("Supplied blocks are not adjacent: " .. tostring(fromNode) .. " and " .. tostring(toNode))
 	end
@@ -64,6 +75,39 @@ function navigation.isOppositeDirection(orientationFirst, orientationSecond)
 	--[[ sides api numbers are so that if you do integer division by 2 on them,
 	it means that one direction is opposite to the other --]]
 	return math.floor(orientationFirst / 2) == math.floor(orientationSecond / 2)
+end
+
+--[[ calculates the block's orientation relative to fromOrientation (robot.orientation
+by default, which means - on which side of the robot it is), either specifying
+the block coordinates (toNode) or it's orientation (toOrientation) as from
+calcOrientation (used for smart turning) --]]
+function navigation.relativeOrientation(fromNode, toNode, fromOrientation, toOrientation) 
+	fromOrientation = fromOrientation or robot.orientation
+	toOrientation = toOrientation or navigation.calcOrientation(fromNode, toNode, fromOrientation, true)
+	if toOrientation == fromOrientation then
+		return sides.front
+	elseif toOrientation == sides.negy or toOrientation == sides.posy then
+		return toOrientation
+	elseif navigation.isOppositeDirection(toOrientation, fromOrientation) then
+		return sides.back
+	else
+		local directionDelta = fromOrientation - toOrientation
+		--[[ sides api numbers are so that if you subtract current from target orientation,
+		you can make decision which way to turn based on result's sign and parity --]]
+		if directionDelta > 0 then
+			if (directionDelta % 2) == 0 then
+				return sides.right
+			else
+				return sides.left
+			end
+		else
+			if (directionDelta % 2) == 0 then
+				return sides.left
+			else
+				return sides.right
+			end
+		end
+	end
 end
 
 function navigation.calcCostForPath(path, costFunction, skipGoal, initialPosition, initialOrientation)
@@ -138,7 +182,7 @@ function navigation.heuristicManhattan(fromNode, toNode)
 end
 
 function navigation.heuristicEuclidean(fromNode, toNode)
-	return math.sqrt((fromNode.x - fromNode.x)^2 + (fromNode.y - fromNode.y)^2 + (fromNode.z - fromNode.z)^2)
+	return math.sqrt((toNode.x - fromNode.x)^2 + (toNode.y - fromNode.y)^2 + (toNode.z - fromNode.z)^2)
 end
 
 --[[ returns cost for moving between two adjacent blocks (nodes), taking into account
@@ -179,9 +223,9 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 	cost = cost or navigation.costTime
 	heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
-	local cameFrom = VectorChunk(robot.position, true, true)
-	local costSoFar = VectorChunk(robot.position, true)
-	local orientation = VectorChunk(robot.position, true)
+	local cameFrom = VectorChunk(start, true, true)
+	local costSoFar = VectorChunk(start, true)
+	local orientation = VectorChunk(start, true)
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
@@ -214,34 +258,59 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 	-- reconstruct path
 	local path = {}
 	local currentNode = goal
-    while currentNode ~= start do
+	while currentNode ~= start do
+		debug.drawCube(currentNode, "green")
 		table.insert(path, currentNode)
 		currentNode = cameFrom[currentNode]
 	end
+	debug.commit()
 
 	local endMem = utils.freeMemory()
-	print("Starting memory:", startMem)
+	--[[ print("Starting memory:", startMem)
 	print("Ending memory: ", endMem)
-	print("Memory used:", startMem - endMem)
+	print("Memory used:", startMem - endMem) ]]
 
 	return path, costSoFar[goal]
 end
 
 -- performs traveling salesman problem algorithm using nearest neighbour algorithm
-function navigation.tspGreedy(nodes)
-	local path = {}
+function navigation.tspGreedy(initialTour, startNode, endNode)
+	local optimizedTour = {}
+	local tour = utils.deepCopy(initialTour)
 	local totalCost = 0
-	local currentNodeIndex = 1
+	local dummyNode = vec3(math.huge, math.huge, math.huge)
+	local loopTour = startNode == nil or endNode == nil
 
-	while #nodes > 1 do
-		local currentNode = table.remove(nodes, currentNodeIndex)
-		table.insert(path, currentNode)
+	local function heuristic(fromNode, toNode)
+		if (fromNode == dummyNode or toNode == dummyNode) and
+		   (fromNode == startNode or fromNode == endNode or toNode == startNode or toNode == endNode) then
+			return 0
+		else
+			return navigation.heuristicEuclidean(fromNode, toNode)
+		end
+	end
+
+	if not loopTour then
+		table.insert(tour, dummyNode)
+		-- add startNode and endNode to the table if they don't exist
+		if not utils.findIndex(tour, startNode) then
+			table.insert(tour, startNode)
+		end
+		if not utils.findIndex(tour, endNode) then
+			table.insert(tour, endNode)
+		end
+	end
+	local currentNodeIndex = utils.findIndex(tour, startNode) -- start at starting node
+
+	while #tour > 1 do
+		local currentNode = table.remove(tour, currentNodeIndex)
+		table.insert(optimizedTour, currentNode)
 
 		-- search for nearest neighbour of current node
 		local bestNodeIndex = 1
-		local bestNodeDistance = navigation.heuristicManhattan(currentNode, nodes[1])
-		for i, node in ipairs(nodes) do
-			local nodeDistance = navigation.heuristicManhattan(currentNode, node)
+		local bestNodeDistance = heuristic(currentNode, tour[1])
+		for i, node in ipairs(tour) do
+			local nodeDistance = heuristic(currentNode, node)
 			if nodeDistance < bestNodeDistance then
 				bestNodeDistance = nodeDistance
 				bestNodeIndex = i
@@ -253,12 +322,29 @@ function navigation.tspGreedy(nodes)
 		totalCost = totalCost + bestNodeDistance
 	end
 
-	table.insert(path, table.remove(nodes, 1))
-	totalCost = totalCost + navigation.heuristicManhattan(path[1], path[#path])
-	return path, totalCost
+	table.insert(optimizedTour, table.remove(tour, 1))
+	
+	if loopTour then
+		totalCost = totalCost + heuristic(optimizedTour[1], optimizedTour[#optimizedTour])
+	else
+		local dummyIndex = utils.findIndex(optimizedTour, dummyNode)
+		print(dummyIndex)
+		local finalTour = {}
+		for i = dummyIndex - 1, 1, -1 do
+			table.insert(finalTour, optimizedTour[i])
+		end
+		for i = #optimizedTour, dummyIndex + 1, -1 do
+			table.insert(finalTour, optimizedTour[i])
+		end
+		optimizedTour = finalTour
+	end
+	return optimizedTour, totalCost
 end
 
-function navigation.tspTwoOpt(tour)
+function navigation.tspTwoOpt(tour, startNode, endNode)
+	local loopTour = startNode == nil or endNode == nil
+	local optimizedTour = utils.deepCopy(tour)
+
 	local twoOptExchange = function(tour, _i, _k)
 		local newTour = {}
 		for i = 0, _i - 1 do
@@ -275,17 +361,37 @@ function navigation.tspTwoOpt(tour)
 	local heuristicCost = function(tour)
 		local totalCost = 0
 		for i = 1, #tour - 1 do
-			totalCost = totalCost + navigation.heuristicManhattan(tour[i], tour[i+1])
+			totalCost = totalCost + navigation.heuristicEuclidean(tour[i], tour[i+1])
 		end
-		totalCost = totalCost + navigation.heuristicManhattan(tour[1], tour[#tour])
+
+		if loopTour then
+			totalCost = totalCost + navigation.heuristicEuclidean(tour[1], tour[#tour])
+		end
 		return totalCost
 	end
 
-	local optimizedTour = utils.deepCopy(tour)
+	--[[ put start node and end node at the start and end of the table respectively if
+	we aren't making a looped tour --]]
+	if not loopTour then
+		-- if start and end nodes already exist in the tour, remove them
+		local startNodeIndex = utils.findIndex(optimizedTour, startNode)
+		if startNodeIndex then
+			table.remove(optimizedTour, startNodeIndex)
+		end
+		local endNodeIndex = utils.findIndex(optimizedTour, endNode)
+		if endNodeIndex then
+			table.remove(optimizedTour, endNodeIndex)
+		end
+		table.insert(optimizedTour, 1, startNode)
+		table.insert(optimizedTour, endNode)
+	end
+	
 	local bestDistance = heuristicCost(optimizedTour)
+	--[[ process the table, skipping first and last node if we're not looping the tour
+	to keep them as first and last --]]
 	::startAgain::
-	for i = 2, #optimizedTour - 1 do
-		for k = i, #optimizedTour do
+	for i = 2, #optimizedTour - (loopTour and 1 or 2) do
+		for k = i, #optimizedTour - (loopTour and 0 or 1) do
 			local newTour = twoOptExchange(optimizedTour, i, k)
 			local newDistance = heuristicCost(newTour)
 			if newDistance < bestDistance then
@@ -299,38 +405,28 @@ function navigation.tspTwoOpt(tour)
 	return optimizedTour, bestDistance
 end
 
--- performs robot turning with minimal number of turns
-function navigation.smartTurn(direction)
+--[[ performs robot turning with minimal number of turns, either specifying direction
+or node to turn towards --]]
+function navigation.smartTurn(direction, node)
     -- check if we're not already facing the desired direction 
-    if robot.orientation ~= direction then
-		if navigation.isOppositeDirection(robot.orientation, direction) then
+	if robot.orientation ~= direction then
+		--[[ returns block's relative orientation based either on the node to which we should turn towards or the
+		direction the node is facing as returned from calcOrientation --]]
+		local relativeOrientation = navigation.relativeOrientation(robot.position, node, robot.orientation, direction)
+		if relativeOrientation == sides.left then
+			robot.turnLeft()
+		elseif relativeOrientation == sides.right then
+			robot.turnRight()
+		elseif relativeOrientation == sides.back then
 			robot.turnAround()
-		else
-            local directionDelta = robot.orientation - direction
-            --[[ sides api numbers are so that if you subtract current from target orientation,
-            you can make decision which way to turn based on result's sign and parity --]]
-			if directionDelta > 0 then
-				if (directionDelta % 2) == 0 then
-					robot.turnRight()
-				else
-					robot.turnLeft()
-				end
-			else
-				if (directionDelta % 2) == 0 then
-					robot.turnLeft()
-				else
-					robot.turnRight()
-				end
-			end
 		end
 	end
+	return robot.orientation
 end
 
 -- turns the robot to face adjacent block (node) with minimal number of turns and returns it's orientation after turning
 function navigation.faceBlock(node)
-    local targetOrientation = navigation.calcOrientation(robot.position, node, robot.orientation)
-	navigation.smartTurn(targetOrientation)
-    return targetOrientation
+	return navigation.smartTurn(nil, node)
 end
 
 --[[ performs robot navigation through a path which should be a table of adjacent
@@ -383,7 +479,6 @@ function navigation.navigatePath(path, skipGoal)
 end
 
 function navigation.goTo(goal, skipGoal, start, startOrientation, cost, heuristic)
-	skipGoal = skipGoal or false
 	local path, cost = navigation.aStar(goal, start, startOrientation, cost, heuristic)
 	navigation.navigatePath(path, skipGoal)
 end

@@ -5,7 +5,7 @@ local event = require("event")
 local utils = {}
 
 -- checks if element already exists in a table
-function utils.hasDuplicateValue(tab, value)
+function utils.hasValue(tab, value)
 	for index, element in ipairs(tab) do
 		if element == value then
 			return true
@@ -26,6 +26,30 @@ function utils.hasKey(tab, key)
 		end
 	end
 	return false
+end
+
+function utils.keys(tab)
+	local ks = {}
+	for k, v in pairs(tab) do
+		table.insert(ks, k)
+	end
+	return ks
+end
+
+function utils.values(tab)
+	local vs = {}
+	for k, v in pairs(tab) do
+		table.insert(vs, v)
+	end
+	return vs
+end
+
+function utils.findIndex(tab, value)
+	for i, v in ipairs(tab) do
+		if v == value then
+			return i
+		end
+	end
 end
 
 --[[ measures how much time execution of a function took, returns
@@ -118,7 +142,7 @@ end
 function utils.shallowCompare(obj1, obj2, ignoreKeys)
 	ignoreKeys = ignoreKeys or {}
 	for k, v in pairs(obj1) do
-		if not utils.hasDuplicateValue(ignoreKeys, k) and (obj2[k] == nil or obj2[k] ~= v) then
+		if not utils.hasValue(ignoreKeys, k) and (obj2[k] == nil or obj2[k] ~= v) then
 			return false
 		end
 	end

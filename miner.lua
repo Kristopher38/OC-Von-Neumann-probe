@@ -92,7 +92,7 @@ local function mineOreLump(firstOreVector)
 
 		for i, vector in ipairs(nav.neighbours(target)) do
 			if map.assumeBlockType(map[vector]) == blockType.ore then
-				if not utils.hasDuplicateValue(toMineVectors, vector) then
+				if not utils.hasValue(toMineVectors, vector) then
 					table.insert(toMineVectors, vector)
 				end
 			end

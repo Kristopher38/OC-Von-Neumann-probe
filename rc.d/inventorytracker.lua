@@ -115,7 +115,7 @@ local function customSuckLogic(itemsSucked, manyEventsForItem, singleCraftAmount
                 local sizeDifference = newSlotSize - robot.inventory.slots[i].size
                 if sizeDifference > 0 then
                     -- crafting workaround when crafted item amount is larger than amount of item used to craft it and it lands in crafting area
-                    if forceUpdateInCraftingArea and utils.hasDuplicateValue({1, 2, 3, 5, 6, 7, 9, 10, 11}, i) then
+                    if forceUpdateInCraftingArea and utils.hasValue({1, 2, 3, 5, 6, 7, 9, 10, 11}, i) then
                         robot.inventory.slots[i] = invcontroller.getStackInInternalSlot(i)
                         ignoreUpdates[i] = ignoreUpdates[i] + 1
                     else
@@ -335,7 +335,7 @@ local function customCraft(amount, singleCraftAmount)
     -- then update the crafting area
     for i = 1, 11 do
         -- skip elements which are not in the crafting area, empty ones and those already updated by customSuckLogic
-        if i % 4 ~= 0 and robot.inventory.slots[i] and not utils.hasDuplicateValue(suckedToSlots, i) then
+        if i % 4 ~= 0 and robot.inventory.slots[i] and not utils.hasValue(suckedToSlots, i) then
             deductFromSlot(i, robot.inventory.slots[i].size - robot.count(i))
         end
     end

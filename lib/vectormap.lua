@@ -12,7 +12,7 @@ VectorMap.chunkFolder= "/home/chunks/"
 setmetatable(VectorMap, {__call = function(cls, _chunkSize, _storedType)
 	local self = {}
 	self.chunks = {}
-	self.chunkSize = _chunkSize or vec3(16, 16, 16)
+	self.chunkSize = _chunkSize or vec3(4096, 256, 4096)
 	self.storedType = _storedType or "f"
 	-- order is important since we're overriding __newindex method!
 	-- setmetatable has to be called after setting fields
@@ -21,7 +21,7 @@ setmetatable(VectorMap, {__call = function(cls, _chunkSize, _storedType)
 end })
 
 -- converts vector from global coordinates to local coordinates in a chunk calculated using given chunk offset
-local function localFromAbsolute(vector, offset, chunkSize)
+local function localFromAbsolute(vector, chunkSize)
     return vector.x % (chunkSize.x), vector.y % (chunkSize.y), vector.z % (chunkSize.z)
 end
 
@@ -47,7 +47,7 @@ function VectorMap:at(vector)
 	local x, y, z = offsetFromAbsolute(vector, self.chunkSize)
 	local chunk = self.chunks[packxyz(x, y, z)]
 	if chunk ~= nil then
-		local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
+		local localx, localy, localz = localFromAbsolute(vector, self.chunkSize)
 		return chunk:atxyz(localx, localy, localz)
 	else
 		return nil -- return something else, possibly some enum.not_present
@@ -57,10 +57,10 @@ end
 function VectorMap:set(vector, element)
 	local x, y, z = offsetFromAbsolute(vector, self.chunkSize)
 	local chunkHash = packxyz(x, y, z)
-	if self.chunks[chunkHash] == nil then 
-		self.chunks[chunkHash] = VectorChunk(chunkOffset)
+	if self.chunks[chunkHash] == nil then
+		self.chunks[chunkHash] = VectorChunk()
 	end
-	local localx, localy, localz = localFromAbsolute(vector, chunkOffset, self.chunkSize)
+	local localx, localy, localz = localFromAbsolute(vector, self.chunkSize)
 	self.chunks[chunkHash]:setxyz(localx, localy, localz, element)
 end
 
@@ -147,7 +147,7 @@ function VectorMap.__pairs(self)
 	local function iterator(self, index)
 		if chunkIterator then
 			local chunkVector = vec3(unpackxyz(chunkIndex))
-			index, element = chunkIterator(chunk, index and vec3(localFromAbsolute(index, chunkVector, self.chunkSize)) or index)
+			index, element = chunkIterator(chunk, index and vec3(localFromAbsolute(index, self.chunkSize)) or index)
 			if element then
 				return vec3(absoluteFromLocal(index, chunkVector, self.chunkSize)), element
 			else
