@@ -102,18 +102,7 @@ function mining.mineOreLump(oreSide)
             currentOreLump[nearestOre] = nil
         end
     end
-    --[[ print("Calculating fastest ore tour...")
-    local oreTour = nav.tspTwoOpt(nav.tspGreedy(utils.keys(ores)))
-    print("Mining ore lump...")
-    print(inspect(oreTour))
-    for i, ore in pairs(oreTour) do
-        if map.assumeBlockType(map[ore]) == blockType.ore then
-            print("Going to next ore on route: " .. tostring(ore))
-            nav.goTo(ore, true)
-            print("Mining ore block...")
-            robot.swing(nav.relativeOrientation(robot.position, ore))
-        end
-    end ]]
+    os.sleep(0)
     print("Finished mining ore lump.")
 end
 
@@ -135,7 +124,6 @@ function mining.mineChunk()
     local oreLumps = mining.oreLumpsFromOres(scanBatch:query(blockType.ore))
     print("Calculating fastest tour...")
     local oreLumpsTour = nav.shortestTour(utils.keys(oreLumps), robot.position, startPos)
-    print(inspect(oreLumpsTour))
     -- delete last item - starting position
     table.remove(oreLumpsTour, #oreLumpsTour)
     table.remove(oreLumpsTour, 1)
@@ -149,44 +137,7 @@ function mining.mineChunk()
         nav.goTo(nearestOre, true)
         mining.mineOreLump(nav.relativeOrientation(robot.position, nearestOre))
     end
-
-    -- startPos should also be included in tspGreedy nodes as goal parameter, and 
-    -- robot.position should be included as start parameter
     nav.goTo(startPos)
-
---[[         while #ores > 0 do
-            local min = math.huge
-            local minOre
-            for i, ore in ipairs(ores) do
-                local heuristicDistance = nav.heuristicManhattan(robot.position, ore)
-                if heuristicDistance < min then
-                    min = heuristicDistance
-                    minOre = ore
-                end
-            end
-            print("nearest ore found, navigating")
-            local path = nav.aStar(minOre)
-            nav.navigatePath(path, true)
-            print("navigation finished")
-            local oreSide
-            local deltaY = robot.position.y - path[1].y
-            print("deltaY = "..tostring(deltaY))
-            if deltaY == 0 then
-                oreSide = sides.front
-            elseif deltaY == -1 then
-                oreSide = sides.up
-            else
-                oreSide = sides.down
-            end
-            local oreLumpBatch = scanOre(oreSide)
-            mineOreLump(minOre)
-            ores = batch:query(blockType.ore)
-        end
-        print("going back to the digging column")
-        local path = nav.aStar(robotColumnPos)
-        nav.navigatePath(path) 
-        
-    end ]]
 end
 
 return mining

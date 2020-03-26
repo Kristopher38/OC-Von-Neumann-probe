@@ -53,14 +53,10 @@ function ScanBatch:scanQuad(offsetVector, sizeVector)
 		for z = 0, sizeVector.z - 1 do
             for x = 0, sizeVector.x - 1 do
 				map[robot.position + offsetVector + vec3(x, y, z)] = scanData[i]
-                if map.assumeBlockType(scanData[i]) == blockType.ore then
-                    debug.drawCube(robot.position + offsetVector + vec3(x, y, z), "red")
-                end
                 i = i + 1
 			end
 		end
     end
-    debug.commit()
     self.scans[robot.position + offsetVector] = sizeVector
 end
     
