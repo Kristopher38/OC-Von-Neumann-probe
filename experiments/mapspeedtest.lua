@@ -9,7 +9,6 @@ local vec3 = require("vec3")
 local VectorChunk = require("vectorchunk")
 
 local v = VectorChunk(vec3(), true)
---local v = VectorChunk()
 
 local x = 31
 local y = 31
@@ -27,11 +26,6 @@ function fill()
                 _, real, cpu = utils.timeIt(false, v.set, v, vector, vec3(64, 23, 734))
                 totalTimeReal = totalTimeReal + real
                 totalTimeCpu = totalTimeCpu + cpu
-                --v[vector] = randomnum
-                --print(vector, randomnum)
-                --[[ if i == 4 and j == 28 and k == 68 then
-                    goto exit
-                end ]]
             end
         end
     end

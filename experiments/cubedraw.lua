@@ -47,7 +47,6 @@ local function drawbigcube(baseOffset, size, color)
     end
 end
 
-
 --expand(robot.position+vec3(0, 6, 0), 7)
 
 --[[ utils.timeIt(drawbigcube, robot.position+vec3(0, 1, 0), vec3(12, 12, 12), "green")
@@ -60,29 +59,6 @@ utils.timeIt(drawbigcube, robot.position+vec3(0, 20, 0), vec3(12, 12, 12), "dark
 utils.timeIt(drawbigcube, robot.position+vec3(-20, 20, 0), vec3(12, 12, 12), "white") ]]
 
 dbg.drawLine(robot.position, robot.position+vec3(0, 10, 20), nil, nil, 0.5)
-
---dbg.drawCube(robot.position+vec3(0, 0, -1), "red")
---dbg.drawCube(robot.position+vec3(0, 0, -2), dbg.color.red, 0.8)
-
 utils.timeIt(dbg.commit)
 print(utils.freeMemory())
-
---dbg.drawCube(vec3(72, 64, 840), dbg.color.red, 0.8)
---[[ local shape = glasses.addCustom3D()
-shape.setGLMODE("TRIANGLE_STRIP")
-shape.setShading("SMOOTH")
-
-local color = dbg.color.red
---shape.addTranslation(vector.x, vector.y, vector.z)
-shape.addColor(color[1], color[2], color[3], opacity)
-shape.setVisibleThroughObjects(true)
-
-while true do
-    local EVENT, ID, USER, PLAYER_POSITION_X, PLAYER_POSITION_Y, PLAYER_POSITION_Z, 
-		PLAYER_LOOKAT_X, PLAYER_LOOKAT_Y, PLAYER_LOOKAT_Z, PLAYER_EYE_HEIGHT, 
-		BLOCK_POSITION_X, BLOCK_POSITION_Y, BLOCK_POSITION_Z, BLOCK_SIDE, 
-        PLAYER_ROTATION, PLAYER_PITCH, PLAYER_FACING = event.pull("interact_world_block_right")
-    print("Adding vertex:", BLOCK_POSITION_X, BLOCK_POSITION_Y, BLOCK_POSITION_Z)
-    shape.addVertex(PLAYER_LOOKAT_X, PLAYER_LOOKAT_Y, PLAYER_LOOKAT_Z)
-end ]]
 
