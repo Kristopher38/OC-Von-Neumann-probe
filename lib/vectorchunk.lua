@@ -1,12 +1,17 @@
 local vec3 = require("vec3")
 local utils = require("utils")
+local robot = require("robot")
 
 local VectorChunk = {}
 VectorChunk.__index = VectorChunk
-setmetatable(VectorChunk, {__call = function(cls, offset, centerOffset, packValues)
+
+setmetatable(VectorChunk, {__call = function(cls, packValues, storeFloats, offset)
     local self = {}
     self.data = {}
-    self.offset = centerOffset and offset - vec3(2048, offset.y, 2048) or (offset or vec3(0, 0, 0))
+    -- default offset to robot.position, and if it doesn't exist, default to vector [0, 0, 0]
+    self.offset = offset and offset or (robot.position and (robot.position - vec3(2048, 0, 2048)) or vec3(0, 0, 0))
+    self.pack = storeFloats and cls.packFloat or cls.packInt
+    self.unpack = storeFloats and cls.unpackFloat or cls.unpackInt
     self.packValues = packValues or false
 
     setmetatable(self, cls)
@@ -15,25 +20,40 @@ end })
 
 --[[ Packs x, y, z values in range x: [0, 4095], y: [0, 255], z: [0, 4095]
 into a single integer. The packed format is [x: 12 bits, y: 8 bits, z: 12 bits] --]]
-local function packxyz(x, y, z, offset)
-    return (((x - offset.x) & 0x00000FFF) << 20) | (((y - offset.y) & 0x000000FF) << 12) | ((z - offset.z) & 0x00000FFF)
+function VectorChunk:packInt(x, y, z)
+    local offset = self.offset
+    return (((x - offset.x) & 0x00000FFF) << 20) |
+           (((y - offset.y) & 0x000000FF) << 12) |
+           ((z - offset.z) & 0x00000FFF)
 end
 
 --- unpacks vector as a single integer into x, y, z values
-local function unpackxyz(number, offset)
-    return ((number & 0xFFF00000) >> 20) + offset.x, ((number & 0x000FF000) >> 12) + offset.y, (number & 0x00000FFF) + offset.z
+function VectorChunk:unpackInt(number)
+    local offset = self.offset
+    return ((number & 0xFFF00000) >> 20) + offset.x,
+           ((number & 0x000FF000) >> 12) + offset.y,
+           (number & 0x00000FFF) + offset.z
 end
 
--- all that verbosity below is for extra performance
+function VectorChunk:packFloat(x, y, z)
+    local offset = self.offset
+    return string.pack(">fff", x - offset.x, y - offset.y, z - offset.z)
+end
+
+function VectorChunk:unpackFloat(number)
+    local offset = self.offset
+    local x, y, z = string.unpack(">fff", number)
+    return x + offset.x, y + offset.y, z + offset.z
+end
 
 function VectorChunk:at(vec)
-    local value = rawget(self.data, packxyz(vec.x, vec.y, vec.z, self.offset))
-    return self.packValues and (value and vec3(unpackxyz(value, self.offset)) or nil) or value
+    local value = rawget(self.data, self:pack(vec.x, vec.y, vec.z))
+    return self.packValues and (value and vec3(self:unpack(value)) or nil) or value
 end
 
 function VectorChunk:atxyz(x, y, z)
-    local value = rawget(self.data, packxyz(x, y, z, self.offset))
-    return self.packValues and (value and vec3(unpackxyz(value, self.offset)) or nil) or value
+    local value = rawget(self.data, self:pack(x, y, z))
+    return self.packValues and (value and vec3(self:unpack(value)) or nil) or value
 end
 
 --[[ function VectorChunk:atIndex(index)
@@ -45,11 +65,11 @@ end ]]
 end ]]
 
 function VectorChunk:set(vec, elem)
-    rawset(self.data, packxyz(vec.x, vec.y, vec.z, self.offset), self.packValues and packxyz(elem.x, elem.y, elem.z, self.offset) or elem)
+    rawset(self.data, self:pack(vec.x, vec.y, vec.z), self.packValues and self:pack(elem.x, elem.y, elem.z) or elem)
 end
 
 function VectorChunk:setxyz(x, y, z, elem)
-    rawset(self.data, packxyz(x, y, z, self.offset), self.packValues and packxyz(elem.x, elem.y, elem.z, self.offset) or elem)
+    rawset(self.data, self:pack(x, y, z), self.packValues and self:pack(elem.x, elem.y, elem.z) or elem)
 end
 
 --[[ function VectorChunk:insert(vec)
@@ -91,9 +111,9 @@ end
 function VectorChunk.__pairs(self)
     local function statelessIterator(self, index)
         local element
-        index, element = next(self.data, index and packxyz(index.x, index.y, index.z, self.offset) or index)
+        index, element = next(self.data, index and self:pack(index.x, index.y, index.z) or index)
         if element then
-            return vec3(unpackxyz(index, self.offset)), self.packValues and vec3(unpackxyz(element, self.offset)) or element
+            return vec3(self:unpack(index)), self.packValues and vec3(self:unpack(element)) or element
         end
     end
 
