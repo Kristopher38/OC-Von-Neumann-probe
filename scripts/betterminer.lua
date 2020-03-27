@@ -6,5 +6,4 @@ local sides = require("sides")
 debug.init()
 debug.clearWidgets()
 
---mining.mineOreLump(sides.front)
 mining.mineChunk()
