@@ -7,35 +7,57 @@ local sides = require("sides")
 local vec3 = require("vec3")
 local VectorChunk = require("vectorchunk")
 
-local v = VectorChunk(vec3(), false)
+local testMap = false
+local testIndexes = false
+
+print("Testing " .. (testMap and "VectorMap" or "VectorChunk") .. " with " .. (testIndexes and "integer indexes" or "vector indexes"))
+
+local v
+if testMap then
+	v = VectorMap(false, false)
+else
+	v = VectorChunk(false, false, vec3())
+end
+
 local startMem = math.max(utils.freeMemory(), utils.freeMemory(), utils.freeMemory())
 
 math.randomseed(os.time())
 
-local x = 63
+local x = 31
 local y = 31
 local z = 31
 
-for i = 0,x  do
+local idx = 0
+for i = 0,x do
 	for j = 0,y do
 		for k = 0,z do
-			local vector = vec3(i, j, k) --vec3(math.random(0, 64), math.random(0, 64), math.random(0, 64))
-			local randomnum = math.random(0, 543)--vec3(math.random(0, 64), math.random(0, 64), math.random(0, 64))
-			v[vector] = randomnum
+			idx = idx + 1
+			local vector = vec3(i, j, k)
+			local randomnum = math.random(0, 543)
+			if testIndexes then
+				v:setIndex(idx, vector)
+			else
+				v:set(vector, randomnum)
+			end
 		end
 	end
 end
 
-local i, real, cpu = utils.timeIt(function(v) 
+local i, real, cpu = utils.timeIt(false, function(d) 
 	local i = 0
-	for key,val in pairs(v) do
+	local iter, cls, j
+	if testIndexes then
+		iter, cls, j = d:ipairs()
+	else
+		iter, cls, j = d:pairs()
+	end
+	for key,val in iter, cls, j do
 		i = i + 1
 	end
 	return i
 end, v)
 
-print("cpu time:", cpu)
-::exit::
+print("cpu iteration time:", cpu)
 local endMem = math.max(utils.freeMemory(), utils.freeMemory(), utils.freeMemory())
 local elemCount = i
 print("starting memory: ", startMem)

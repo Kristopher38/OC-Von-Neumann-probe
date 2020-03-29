@@ -8,22 +8,38 @@ local sides = require("sides")
 local vec3 = require("vec3")
 local VectorChunk = require("vectorchunk")
 
-local v = VectorChunk(vec3(), true)
+local testMap = false
+local testIndexes = false
+
+print("Testing " .. (testMap and "VectorMap" or "VectorChunk") .. " with " .. (testIndexes and "integer indexes" or "vector indexes"))
+
+local v
+if testMap then
+	v = VectorMap(false, false)
+else
+	v = VectorChunk(false, false, vec3())
+end
 
 local x = 31
 local y = 31
 local z = 31
 
-function fill()
+local function fill()
     local totalTimeReal = 0
     local totalTimeCpu = 0
+    local idx = 0
     for i = 0,x do
         for j = 0,y do
             for k = 0,z do
-                local vector = vec3(x, y, z)
+                local vector = vec3(i, j, k)
                 local randomnum = math.random(-64, 64)
-                local real, cpu
-                _, real, cpu = utils.timeIt(false, v.set, v, vector, vec3(64, 23, 734))
+                local _, real, cpu
+                idx = idx + 1
+                if testIndexes then
+                    _, real, cpu = utils.timeIt(false, v.setIndex, v, idx, vector)
+                else
+                    _, real, cpu = utils.timeIt(false, v.set, v, vector, randomnum)
+                end
                 totalTimeReal = totalTimeReal + real
                 totalTimeCpu = totalTimeCpu + cpu
             end
@@ -32,17 +48,21 @@ function fill()
     return totalTimeCpu
 end
 
-function read()
+local function read()
     local totalTimeReal = 0
     local totalTimeCpu = 0
-    local tmp = nil
-    local mt = getmetatable(v)
-    for i = 1,x do
-        for j = 1,y do
-            for k = 1,z do
-                local vec = vec3(x, y, z)
-                local real, cpu
-                tmp, real, cpu = utils.timeIt(false, v.at, v, vec)
+    local idx = 0
+    for i = 0,x do
+        for j = 0,y do
+            for k = 0,z do
+                local vector = vec3(i, j, k)
+                local tmp, real, cpu
+                idx = idx + 1
+                if testIndexes then
+                    tmp, real, cpu = utils.timeIt(false, v.atIndex, v, idx)
+                else
+                    tmp, real, cpu = utils.timeIt(false, v.at, v, vector)
+                end
                 totalTimeReal = totalTimeReal + real
                 totalTimeCpu = totalTimeCpu + cpu
             end
@@ -63,5 +83,5 @@ print("Fill:", fillavg/10)
 print("Read:", readavg/10)
 
 ::exit::
-local elemCount = x*y*z
+local elemCount = (x+1)*(y+1)*(z+1)
 print("elements in map: ", elemCount)

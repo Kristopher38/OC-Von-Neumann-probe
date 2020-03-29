@@ -3,15 +3,16 @@ local utils = require("utils")
 local robot = require("robot")
 
 local VectorChunk = {}
-VectorChunk.__index = VectorChunk
+--VectorChunk.__index = VectorChunk
 
-setmetatable(VectorChunk, {__call = function(cls, packValues, storeFloats, offset)
+setmetatable(VectorChunk, {__call = function(cls, packValues, allowFloats, offset)
     local self = {}
-    self.data = {}
+    self.hashData = {}
+    self.arrayData = {}
     -- default offset to robot.position, and if it doesn't exist, default to vector [0, 0, 0]
-    self.offset = offset and offset or (robot.position and (robot.position - vec3(2048, 0, 2048)) or vec3(0, 0, 0))
-    self.pack = storeFloats and cls.packFloat or cls.packInt
-    self.unpack = storeFloats and cls.unpackFloat or cls.unpackInt
+    self.offset = offset and offset or (robot.position and (robot.position - vec3(2048, robot.position.y, 2048)) or vec3(0, 0, 0))
+    self.pack = allowFloats and cls.packFloat or cls.packInt
+    self.unpack = allowFloats and cls.unpackFloat or cls.unpackInt
     self.packValues = packValues or false
 
     setmetatable(self, cls)
@@ -35,83 +36,82 @@ function VectorChunk:unpackInt(number)
            (number & 0x00000FFF) + offset.z
 end
 
+-- packs vector with floating point coordinates into a string using string.pack 
 function VectorChunk:packFloat(x, y, z)
     local offset = self.offset
     return string.pack(">fff", x - offset.x, y - offset.y, z - offset.z)
 end
 
+-- unpacks vector with floating point coordinates from string into x, y, z value using string.unpack
 function VectorChunk:unpackFloat(number)
     local offset = self.offset
     local x, y, z = string.unpack(">fff", number)
     return x + offset.x, y + offset.y, z + offset.z
 end
 
+--[[ below are raw methods for accessing data without using __index and __newindex, with their
+optimized versions (not needing a vec3 object as constructing new table is inefficient) having
+"xyz" suffix --]]
+
 function VectorChunk:at(vec)
-    local value = rawget(self.data, self:pack(vec.x, vec.y, vec.z))
+    local value = self.hashData[self:pack(vec.x, vec.y, vec.z)]
     return self.packValues and (value and vec3(self:unpack(value)) or nil) or value
 end
 
 function VectorChunk:atxyz(x, y, z)
-    local value = rawget(self.data, self:pack(x, y, z))
+    local value = self.hashData[self:pack(x, y, z)]
     return self.packValues and (value and vec3(self:unpack(value)) or nil) or value
 end
 
---[[ function VectorChunk:atIndex(index)
-    return vec3(unpackxyz(self.data[index]))
-end ]]
-
---[[ function VectorChunk:atIndexXyz(idx)
-    return unpackxyz(self.data[vec])
-end ]]
+function VectorChunk:atIndex(index)
+    return self.arrayData[index] and vec3(self:unpack(self.arrayData[index])) or nil
+end
 
 function VectorChunk:set(vec, elem)
-    rawset(self.data, self:pack(vec.x, vec.y, vec.z), self.packValues and self:pack(elem.x, elem.y, elem.z) or elem)
+    self.hashData[self:pack(vec.x, vec.y, vec.z)] = self.packValues and self:pack(elem.x, elem.y, elem.z) or elem
 end
 
 function VectorChunk:setxyz(x, y, z, elem)
-    rawset(self.data, self:pack(x, y, z), self.packValues and self:pack(elem.x, elem.y, elem.z) or elem)
+    self.hashData[self:pack(x, y, z)] = self.packValues and self:pack(elem.x, elem.y, elem.z) or elem
 end
 
---[[ function VectorChunk:insert(vec)
-    table.insert(self.data, packxyz(vec.x, vec.y, vec.z, self.offset))
-end ]]
+function VectorChunk:setIndex(index, vec)
+    self.arrayData[index] = vec and self:pack(vec.x, vec.y, vec.z) or nil
+end
 
---[[ function VectorChunk:setIndex(index, vec)
-    self.data[index] = packxyz(vec.x, vec.y, vec.z, self.offset)
-end ]]
+function VectorChunk:setIndexXyz(index, x, y, z)
+    self.arrayData[index] = self:pack(x, y, z)
+end
 
-function VectorChunk.__index(self, vec)
-    if utils.isInstance(vec, vec3) then
-        return self:at(vec)
-    --[[ elseif type(vec) == "number" then
-        return self:atIndex(vec) ]]
+function VectorChunk.__index(self, index)
+    if utils.isInstance(index, vec3) then
+        return self:at(index)
+    elseif type(index) == "number" then
+        return self:atIndex(index)
     else
-        return getmetatable(self)[vec] -- gets the metatable with methods and metamethods
+        return getmetatable(self)[index] -- gets the metatable with methods and metamethods and returns a method
     end
 end
 
-function VectorChunk.__newindex(self, vec, elem)
-    if utils.isInstance(vec, vec3) then
-        self:set(vec, elem)
-    --[[ elseif type(vec) == "number" then
-        self:setIndex(vec, elem) -- vec is index, elem is the vector to be set ]]
+function VectorChunk.__newindex(self, index, elem)
+    if utils.isInstance(index, vec3) then
+        self:set(index, elem)
+    elseif type(index) == "number" then
+        self:setIndex(index, elem)
     else
-        rawset(self, vec, elem)
+        rawset(self, index, elem) -- dealing with raw table elements
     end
 end
 
+-- not guaranteed to be the largest index
 function VectorChunk.__len(self)
-    local len = 0
-    for k, v in pairs(self) do
-        len = len + 1
-    end
-    return len
+    return #self.arrayData
 end
 
 function VectorChunk.__pairs(self)
     local function statelessIterator(self, index)
         local element
-        index, element = next(self.data, index and self:pack(index.x, index.y, index.z) or index)
+        index, element = next(self.hashData, index and self:pack(index.x, index.y, index.z) or index)
         if element then
             return vec3(self:unpack(index)), self.packValues and vec3(self:unpack(element)) or element
         end
@@ -120,16 +120,24 @@ function VectorChunk.__pairs(self)
     return statelessIterator, self, nil
 end
 
---[[ function VectorChunk.__ipairs(self)
+-- another way of writing pairs(VectorChunkObject) to make it more standardized in line with VectorChunk.ipairs
+function VectorChunk:pairs()
+    return self.__pairs(self)
+end
+
+--[[ Lua 5.3 doesn't support __ipairs metamethod anymore, so we use custom-named function returning an
+iterator (note that ipairs(VectorChunkObject) will still work because standard ipairs now uses the
+index metamethod which is implemented above) --]]
+function VectorChunk:ipairs()
     local function statelessIterator(self, index)
         index = index + 1
-        local element = self.data[index]
+        local element = self.arrayData[index]
         if element then
-            return index, vec3(unpackxyz(element, self.offset))
+            return index, vec3(self:unpack(element))
         end
     end
 
     return statelessIterator, self, 0
-end ]]
+end
 
 return VectorChunk
