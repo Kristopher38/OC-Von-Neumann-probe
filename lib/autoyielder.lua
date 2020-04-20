@@ -1,24 +1,17 @@
 local AutoYielder = {}
-AutoYielder.__index = AutoYielder
-setmetatable(AutoYielder, {__call = function(cls, yieldInterval)
-    local self = {}
-    self.lastYieldTime = os.clock()
-    self.yieldInterval = yieldInterval or 4.5
+AutoYielder.lastYieldTime = os.clock()
+AutoYielder.yieldInterval = 4.5
 
-	setmetatable(self, cls)
-	return self
-end })
-
-function AutoYielder:yield()
+function AutoYielder.yield()
     local now = os.clock()
-    if now - self.lastYieldTime >= self.yieldInterval then
+    if now - AutoYielder.lastYieldTime >= AutoYielder.yieldInterval then
         coroutine.yield()
-        self.lastYieldTime = now
+        AutoYielder.lastYieldTime = now
     end
 end
 
-function AutoYielder:reset()
-    self.lastYieldTime = os.clock()
+function AutoYielder.reset()
+    AutoYielder.lastYieldTime = os.clock()
 end
 
 return AutoYielder
