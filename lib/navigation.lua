@@ -228,9 +228,9 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
 	cost = cost or navigation.costTime
 	heuristic = heuristic or navigation.heuristicManhattan
 	local openQueue = PriorityQueue()
-	local cameFrom = VectorChunk(start, true, true)
-	local costSoFar = VectorChunk(start, true)
-	local orientation = VectorChunk(start, true)
+	local cameFrom = VectorChunk(true)
+	local costSoFar = VectorChunk()
+	local orientation = VectorChunk()
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
@@ -261,11 +261,11 @@ function navigation.aStar(goal, start, startOrientation, cost, heuristic)
     end
     
 	-- reconstruct path
-	local path = {}
+	local path = VectorChunk()
 	local currentNode = goal
 	while currentNode ~= start do
 		--debug.drawCube(currentNode, "green")
-		table.insert(path, currentNode)
+		path:insert(currentNode)
 		currentNode = cameFrom[currentNode]
 	end
 	--debug.commit()
@@ -280,7 +280,7 @@ end
 
 -- performs traveling salesman problem algorithm using nearest neighbour algorithm
 function navigation.tspGreedy(initialTour, startNode, endNode)
-	local optimizedTour = {}
+	local optimizedTour = VectorChunk()
 	local tour = utils.deepCopy(initialTour)
 	local totalCost = 0
 	local dummyNode = vec3(math.huge, math.huge, math.huge)
@@ -296,25 +296,25 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 	end
 
 	if not loopTour then
-		table.insert(tour, dummyNode)
+		tour:insert(dummyNode)
 		-- add startNode and endNode to the table if they don't exist
 		if not utils.findIndex(tour, startNode) then
-			table.insert(tour, startNode)
+			tour:insert(startNode)
 		end
 		if not utils.findIndex(tour, endNode) then
-			table.insert(tour, endNode)
+			tour:insert(endNode)
 		end
 	end
 	local currentNodeIndex = utils.findIndex(tour, startNode) -- start at starting node
 
 	while #tour > 1 do
-		local currentNode = table.remove(tour, currentNodeIndex)
-		table.insert(optimizedTour, currentNode)
+		local currentNode = tour:remove(currentNodeIndex)
+		optimizedTour:insert(currentNode)
 
 		-- search for nearest neighbour of current node
 		local bestNodeIndex = 1
 		local bestNodeDistance = heuristic(currentNode, tour[1])
-		for i, node in ipairs(tour) do
+		for i, node in tour:ipairs() do
 			local nodeDistance = heuristic(currentNode, node)
 			if nodeDistance < bestNodeDistance then
 				bestNodeDistance = nodeDistance
@@ -327,7 +327,7 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 		totalCost = totalCost + bestNodeDistance
 	end
 
-	table.insert(optimizedTour, table.remove(tour, 1))
+	optimizedTour:insert(tour:remove(1))
 	
 	if loopTour then
 		totalCost = totalCost + heuristic(optimizedTour[1], optimizedTour[#optimizedTour])
@@ -336,10 +336,10 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 		print(dummyIndex)
 		local finalTour = {}
 		for i = dummyIndex - 1, 1, -1 do
-			table.insert(finalTour, optimizedTour[i])
+			finalTour:insert(optimizedTour[i])
 		end
 		for i = #optimizedTour, dummyIndex + 1, -1 do
-			table.insert(finalTour, optimizedTour[i])
+			finalTour:insert(optimizedTour[i])
 		end
 		optimizedTour = finalTour
 	end
@@ -351,15 +351,15 @@ function navigation.tspTwoOpt(tour, startNode, endNode)
 	local optimizedTour = utils.deepCopy(tour)
 
 	local twoOptExchange = function(tour, _i, _k)
-		local newTour = {}
+		local newTour = VectorChunk()
 		for i = 0, _i - 1 do
-			table.insert(newTour, tour[i])
+			newTour:insert(tour[i])
 		end
 		for i = _k, _i, -1 do
-			table.insert(newTour, tour[i])
+			newTour:insert(tour[i])
 		end
 		for i = _k + 1, #tour do
-			table.insert(newTour, tour[i])
+			newTour:insert(tour[i])
 		end
 		return newTour
 	end
@@ -381,14 +381,14 @@ function navigation.tspTwoOpt(tour, startNode, endNode)
 		-- if start and end nodes already exist in the tour, remove them
 		local startNodeIndex = utils.findIndex(optimizedTour, startNode)
 		if startNodeIndex then
-			table.remove(optimizedTour, startNodeIndex)
+			optimizedTour:remove(startNodeIndex)
 		end
 		local endNodeIndex = utils.findIndex(optimizedTour, endNode)
 		if endNodeIndex then
-			table.remove(optimizedTour, endNodeIndex)
+			optimizedTour:remove(endNodeIndex)
 		end
-		table.insert(optimizedTour, 1, startNode)
-		table.insert(optimizedTour, endNode)
+		optimizedTour:insert(1, startNode)
+		optimizedTour:insert(endNode)
 	end
 	
 	local bestDistance = heuristicCost(optimizedTour)

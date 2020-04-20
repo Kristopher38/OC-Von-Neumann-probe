@@ -15,7 +15,7 @@ local ScanBatch = {}
 ScanBatch.__index = ScanBatch
 setmetatable(ScanBatch, {__call = function(cls)
 	local self = {}
-	self.scans = VectorChunk(robot.position, true, true)
+	self.scans = VectorChunk(true, false)
 	setmetatable(self, cls) -- cls = PriorityQueue
 	return self
 end })

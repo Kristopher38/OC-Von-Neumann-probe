@@ -131,11 +131,12 @@ function utils.deepCopy(obj, seen)
 
 	-- New table; mark it as seen an copy recursively.
 	local s = seen or {}
-	local res = setmetatable({}, getmetatable(obj))
+	local res = {}
 	s[obj] = res
-	for k, v in pairs(obj) do
+	for k, v in next, obj do
 		res[utils.deepCopy(k, s)] = utils.deepCopy(v, s)
 	end
+	setmetatable(res, getmetatable(obj))
 	return res
 end
 

@@ -83,6 +83,19 @@ function VectorChunk:setIndexXyz(index, x, y, z)
     self.arrayData[index] = self:pack(x, y, z)
 end
 
+function VectorChunk:insert(pos, vec)
+    if vec then
+        table.insert(self.arrayData, pos, self:pack(vec.x, vec.y, vec.z))
+    else
+        vec = pos
+        self.arrayData[#self.arrayData + 1] = vec and self:pack(vec.x, vec.y, vec.z) or nil
+    end
+end
+
+function VectorChunk:remove(index)
+    return vec3(self:unpack(table.remove(self.arrayData, index)))
+end
+
 function VectorChunk.__index(self, index)
     if utils.isInstance(index, vec3) then
         return self:at(index)

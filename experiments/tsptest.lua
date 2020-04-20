@@ -1,6 +1,7 @@
 package.loaded.scanbatch = nil
 package.loaded.navigation = nil
 package.loaded.utils = nil
+package.loaded.vectorchunk = nil
 local nav = require("navigation")
 local vec3 = require("vec3")
 local debug = require("debug")
@@ -11,14 +12,15 @@ local utils = require("utils")
 local event = require("event")
 local robot = require("robot")
 local VectorMap = require("vectormap")
+local VectorChunk = require("vectorchunk")
 
 debug.init()
 debug.clearWidgets()
 
-local ores = {}
+local ores = VectorChunk()
 local numores = 30
 for i = 1, numores do
-    table.insert(ores, vec3(math.random(55, 95), 73, math.random(800, 840)))
+    ores:insert(vec3(math.random(55, 95), 73, math.random(800, 840)))
 end 
 
 local maxDist = 0
