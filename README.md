@@ -63,3 +63,9 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [ ] Describe a protocol for efficient (energy-wise) communication between the devices
   - [ ] Implement the protocol using functions only available on the EEPROM to make sharing code between the devices easier
   - [ ] Write software for the computer which would receive signals from the robot to install new robot's software on the hard drive and start the assembler
+
+## Technical details about random aspects
+### Robot design\*
+![Robot design](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/robot.png?raw=true)
+
+\*Hover upgrade tier 2 goes into the upgrade container
