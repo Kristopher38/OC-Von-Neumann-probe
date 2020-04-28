@@ -1,4 +1,4 @@
-# OC-Von-Neumann-probe
+# OpenComputers self-replicating robot
 This is a project aiming to create a self-replicating robot, or a [Von Neumann Probe](https://en.wikipedia.org/wiki/Self-replicating_spacecraft) in OpenComputers, a Minecraft mod that adds programmable computers and robots.
 
 ## Goals
