@@ -60,12 +60,13 @@ function ScanBatch:scanQuad(offsetVector, sizeVector)
     self.scans[robot.position + offsetVector] = sizeVector
 end
     
-function ScanBatch:scanLayer()
+function ScanBatch:scanLayer(offsetY)
+    offsetY = offsetY or 0
     local quads = {
-		{vec3(0, 0, -8), vec3(8, 1, 8)},
-		{vec3(0, 0, 0), vec3(8, 1, 8)},
-		{vec3(-8, 0, -8), vec3(8, 1, 8)},
-		{vec3(-8, 0, 0), vec3(8, 1, 8)}
+		{vec3(0, offsetY, -8), vec3(8, 1, 8)},
+		{vec3(0, offsetY, 0), vec3(8, 1, 8)},
+		{vec3(-8, offsetY, -8), vec3(8, 1, 8)},
+		{vec3(-8, offsetY, 0), vec3(8, 1, 8)}
 	}
 	for i, quad in ipairs(quads) do
 		self:scanQuad(table.unpack(quad))
