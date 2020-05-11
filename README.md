@@ -1,4 +1,4 @@
-# OC-Von-Neumann-probe
+# OpenComputers self-replicating robot
 This is a project aiming to create a self-replicating robot, or a [Von Neumann Probe](https://en.wikipedia.org/wiki/Self-replicating_spacecraft) in OpenComputers, a Minecraft mod that adds programmable computers and robots.
 
 ## Goals
@@ -14,7 +14,8 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [ ] Keeping track of tool damage and recrafting it if broken
   - [ ] Recognizing specific structures from map data
   - [ ] Keeping track of robot's energy level, fuel left and going to the lcharging location if energy is low enough and fuel spent
-  - [ ] Customizable logging with different levels and targets (stdout, file, network) 
+  - [ ] Customizable logging with different levels and targets (stdout, file, network)
+  - [ ] Visualisation library for easier debugging with OpenGlasses2
 - [ ] Efficient mining
   - [x] Scanning ore locations with the geolyzer
   - [x] Planning efficient path with TSP algorithms
