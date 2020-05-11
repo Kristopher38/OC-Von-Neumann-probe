@@ -23,7 +23,7 @@ while true do
 		PLAYER_LOOKAT_X, PLAYER_LOOKAT_Y, PLAYER_LOOKAT_Z, PLAYER_EYE_HEIGHT, 
 		BLOCK_POSITION_X, BLOCK_POSITION_Y, BLOCK_POSITION_Z, BLOCK_SIDE, 
 		PLAYER_ROTATION, PLAYER_PITCH, PLAYER_FACING = event.pull("interact_world_block_right")
-	local target = vec3(math.ceil(BLOCK_POSITION_X + robot.position.x), math.ceil(BLOCK_POSITION_Y + robot.position.y), math.ceil(BLOCK_POSITION_Z + robot.position.z))
+	local target = vec3(math.ceil(BLOCK_POSITION_X), math.ceil(BLOCK_POSITION_Y), math.ceil(BLOCK_POSITION_Z))
 	if target ~= robot.position then
 		glasses.removeAll()
 		utils.timeIt(nav.goTo, target, true)
