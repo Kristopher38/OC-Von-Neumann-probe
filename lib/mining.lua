@@ -1,13 +1,13 @@
 local nav = require("navigation")
 local ScanBatch = require("scanbatch")
 local utils = require("utils")
-local VectorMap = require("vectormap")
+local VectorChunk = require("vectorchunk")
 local robot = require("robot")
 local vec3 = require("vec3")
 local blockType = require("blocktype")
 local map = require("map")
 
-local autoyield = require("autoyielder")
+local autoyielder = require("autoyielder")
 local logging = require("logging")
 local log = logging:getLogger("mining")
 log:setLevel(logging.DEBUG)
@@ -35,7 +35,7 @@ end
 
 function mining.oreLumpsFromOres(oreVectors)
     local function oreLumpFloodFill(vector)
-        local lump = VectorMap()
+        local lump = VectorChunk(false, true)
 
         local function floodFill(vector)
             if oreVectors[vector] then
@@ -53,7 +53,7 @@ function mining.oreLumpsFromOres(oreVectors)
         return lump
     end
     
-    local lumps = VectorMap()
+    local lumps = VectorChunk(false, true)
     local vector, block = pairs(oreVectors)(oreVectors, nil)
     while vector do
         local oreLump = oreLumpFloodFill(vector)
@@ -97,11 +97,14 @@ function mining.mineOreLump(oreSide)
     log:info("Scanning ore lump...")
     local oresScanBatch = mining.scanOre(oreSide)
     local ores = oresScanBatch:query(blockType.ore)
-    local neighbourOreLumps = mining.oreLumpsFromOres(ores)
-    local currentOreLump = neighbourOreLumps[nav.nearestBlock(utils.keys(neighbourOreLumps))]
+    local oreLumps = mining.oreLumpsFromOres(ores)
+    local currentOreLump = oreLumps[nav.nearestBlock(utils.keys(oreLumps))]
     if currentOreLump then
-        while #currentOreLump > 0 do
-            local nearestOre = utils.timeIt(nav.nearestBlock, currentOreLump, robot.position, nav.heuristicAStar)
+        while true do
+            local nearestOre = utils.timeIt(nav.nearestBlock, utils.keys(currentOreLump), robot.position, nav.heuristicAStar)
+            if not nearestOre then
+                break
+            end
             nav.goTo(nearestOre, true)
             robotComponent.swing(nav.relativeOrientation(robot.position, nearestOre))
             currentOreLump[nearestOre] = nil
@@ -136,7 +139,7 @@ function mining.mineChunk()
     for i, oreLump in ipairs(oreLumpsTour) do
         local nearestOre
         repeat
-            nearestOre = nav.nearestBlock(oreLumps[oreLump])
+            nearestOre = nav.nearestBlock(utils.keys(oreLumps[oreLump]))
         until map.assumeBlockType(map[nearestOre]) == blockType.ore
         log:info("Going to the nearest ore (of ore lump on route): %s", tostring(nearestOre))
         nav.goTo(nearestOre, true)

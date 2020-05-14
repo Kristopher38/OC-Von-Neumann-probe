@@ -1,5 +1,6 @@
 local sides = require("sides")
 local robot = require("robot")
+local computer = require("computer")
 local component = require("component")
 local geolyzer = component.geolyzer
 
@@ -421,22 +422,11 @@ function navigation.nearestBlock(nodes, fromNode, heuristic)
     local minDist = math.huge
 	local minVector
 
-	local updateMin = function(fromNode, vector)
+	for _, vector in ipairs(nodes) do
 		local heuristicDistance = heuristic(fromNode, vector)
 		if heuristicDistance < minDist then
 			minDist = heuristicDistance
 			minVector = vector
-		end
-	end
-
-	-- TODO: implement using vectorchunk and vectormap as an array and remove those isInstance checks
-	if utils.isInstance(nodes, VectorChunk) or utils.isInstance(nodes, VectorMap) then
-		for vector, block in pairs(nodes) do
-			updateMin(fromNode, vector)
-		end
-	else
-		for i, vector in ipairs(nodes) do
-			updateMin(fromNode, vector)
 		end
 	end
 	return minVector, minDist
@@ -487,28 +477,37 @@ function navigation.navigatePath(path, skipGoal)
 		if delta.y == 0 then
 			if nodeHasBlock then
 				robot.swing()
+				computer.pullSignal(0.1)
 			end
 			while not robot.forward() do
 				robot.swing()
+				computer.pullSignal(0.1)
 			end
 		elseif delta.y == -1 then
 			if nodeHasBlock then
 				robot.swingUp()
+				computer.pullSignal(0.1)
 			end
 			while not robot.up() do
 				robot.swingUp()
+				computer.pullSignal(0.1)
 			end
 		else
 			if nodeHasBlock then
 				robot.swingDown()
+				computer.pullSignal(0.1)
 			end
 			while not robot.down() do
 				robot.swingDown()
+				computer.pullSignal(0.1)
 			end
 		end
 
         -- update the globals
-        map[path[i]] = blockType.air
+		map[path[i]] = blockType.air
+		
+		-- yield to the OS
+		computer.pullSignal(0.1)
 	end
 	if #path > 0 and skipGoal then
 		navigation.faceBlock(path[1])
