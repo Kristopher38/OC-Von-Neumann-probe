@@ -22,7 +22,7 @@ setmetatable(Logger, {__call = function(cls, name, level, format, dateFormat)
     local self = {}
     self.name = name or "root"
     self.level = level or Logging.INFO
-    self.format = format or "[%s][%s] %s: %s" -- timestamp [name] level: message
+    self.format = format or "[%s][%s] %s: %s\n" -- timestamp [name] level: message
 
 	setmetatable(self, cls)
 	return self
