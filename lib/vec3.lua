@@ -1,3 +1,4 @@
+local utils = require("utils")
 -- 3D vector
 local vec3 = {}
 vec3.__index = vec3
@@ -25,6 +26,10 @@ end
 
 function vec3.__tostring(self)
 	return "[" .. self.x .. ", " .. self.y .. ", " .. self.z .. "]"
+end
+
+function vec3.round(self)
+	return vec3(utils.round(self.x), utils.round(self.y), utils.round(self.z))
 end
 
 function vec3.tovec3(str)

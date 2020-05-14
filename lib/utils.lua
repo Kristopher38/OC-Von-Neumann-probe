@@ -52,6 +52,10 @@ function utils.findIndex(tab, value)
 	end
 end
 
+function utils.round(x)
+	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+end
+
 --[[ measures how much time execution of a function took, returns
 function return value, real execution time and cpu execution time,
 and additionally prints execution times --]]
