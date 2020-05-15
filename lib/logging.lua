@@ -45,6 +45,7 @@ function Logger:log(level, msg, ...)
     if level >= self.level then
         local formatted = string.format(self.format, self:formatDate(), self.name, Logging[level], string.format(msg, ...))
         io.stdout:write(formatted)
+        io.stdout:flush()
     end
 end
 
