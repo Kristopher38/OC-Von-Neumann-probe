@@ -12,6 +12,7 @@ local debug = require("debug")
 local VectorChunk = require("vectorchunk")
 local blockType = require("blocktype")
 local utils = require("utils")
+local autoyielder = require("autoyielder")
 
 local navigation = {}
 
@@ -222,77 +223,95 @@ end
 --[[ Performs A* algorithm on a global map variable to find the shortest path from start to goal blocks (nodes).
 Returns path as a table of vec3 coordinates from goal to start block (without the starting block itself)
 and cost to reach the goal block --]]
-function navigation.aStar(goal, start, startOrientation, cost, heuristic)
+function navigation.aStar(goals, start, startOrientation, cost, heuristic, neighbours)
 	--local startMem = utils.freeMemory()
+	goals = utils.isInstance(goals, vec3) and {goals} or goals
+	assert(#goals > 0, "No goals supplied to find paths to")
 	start = start or robot.position
 	startOrientation = startOrientation or robot.orientation
 	cost = cost or navigation.costTime
-	heuristic = heuristic or navigation.heuristicManhattan
+	heuristicFunc = heuristic or navigation.heuristicManhattan
+	heuristic = function(fromNode, goalsTable)
+		local min = #goalsTable > 0 and math.huge or 0
+		for _, goal in ipairs(goalsTable) do
+			local cost = heuristicFunc(fromNode, goal)
+			if cost < min then
+				min = cost
+			end
+		end
+		return min
+	end
+	neighbours = neighbours or navigation.neighbours
 	local openQueue = PriorityQueue()
 	local cameFrom = VectorChunk(true)
 	local costSoFar = VectorChunk()
 	local orientation = VectorChunk()
+	local closestGoal
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
 	orientation[start] = startOrientation
     
-    -- run until queue is empty - never happens as map is never empty
+	-- run until queue is empty - never happens as map is never empty
 	while not openQueue:empty() do
 		local currentNode = openQueue:pop()
 
-        -- terminate algorithm if we reached the goal block (node)
-		if currentNode == goal then
+		-- terminate algorithm if we reached the any of the goal blocks (node)
+		if utils.hasValue(goals, currentNode) then
+			closestGoal = currentNode
 			break
 		end
         
         -- for each neighbour in our currentNode neighbours
-		for i, nextNode in pairs(navigation.neighbours(currentNode)) do
+		for i, nextNode in pairs(neighbours(currentNode)) do
             local newCost = costSoFar[currentNode] + cost(currentNode, nextNode, orientation[currentNode])
 			-- if we haven't visited the block (node) yet or it has smaller cost than previously
 			if cameFrom[nextNode] == nil or 
                newCost < costSoFar[nextNode] then
                 -- put it in the open blocks (nodes) set to expand later and update the tables with cost, path and orientation
-				openQueue:put(nextNode, newCost + heuristic(nextNode, goal))
+				openQueue:put(nextNode, newCost + heuristic(nextNode, goals))
 				costSoFar[nextNode] = newCost
 				cameFrom[nextNode] = currentNode
 				orientation[nextNode] = navigation.calcOrientation(currentNode, nextNode, orientation[currentNode]) -- TODO: reduce call here since it's being called twice (first time in cost()) if condition is true
 			end
 		end
+
+		autoyielder.yield()
     end
     
 	-- reconstruct path
 	local path = {}
-	local currentNode = goal
+	local currentNode = closestGoal
 	while currentNode ~= start do
-		--debug.drawCube(currentNode, "green")
+		--debug.drawCube(currentNode, debug.color.green, 1.0)
 		table.insert(path, currentNode)
 		currentNode = cameFrom[currentNode]
 	end
-	--debug.commit()
 
 	--local endMem = utils.freeMemory()
 	--[[ print("Starting memory:", startMem)
 	print("Ending memory: ", endMem)
 	print("Memory used:", startMem - endMem) ]]
 
-	return path, costSoFar[goal]
+	return path, costSoFar[closestGoal]
 end
 
 -- performs traveling salesman problem algorithm using nearest neighbour algorithm
-function navigation.tspGreedy(initialTour, startNode, endNode)
+function navigation.tspGreedy(initialTour, startNode, endNode, heuristic)
+	assert(initialTour and #initialTour > 0, "No nodes supplied to arrange in a tour")
+	heuristic = heuristic or navigation.heuristicEuclidean
 	local optimizedTour = {}
 	local tour = utils.deepCopy(initialTour)
 	local totalCost = 0
 	local dummyNode = vec3(math.huge, math.huge, math.huge)
 	local loopTour = startNode == nil or endNode == nil
 
-	local function heuristic(fromNode, toNode)
+	local function heuristicCost(fromNode, toNode)
 		if (fromNode == dummyNode or toNode == dummyNode) and
 		   (fromNode == startNode or fromNode == endNode or toNode == startNode or toNode == endNode) then
 			return 0
 		else
-			return navigation.heuristicEuclidean(fromNode, toNode)
+			return heuristic(fromNode, toNode)
 		end
 	end
 
@@ -314,9 +333,9 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 
 		-- search for nearest neighbour of current node
 		local bestNodeIndex = 1
-		local bestNodeDistance = heuristic(currentNode, tour[1])
+		local bestNodeDistance = heuristicCost(currentNode, tour[1])
 		for i, node in ipairs(tour) do
-			local nodeDistance = heuristic(currentNode, node)
+			local nodeDistance = heuristicCost(currentNode, node)
 			if nodeDistance < bestNodeDistance then
 				bestNodeDistance = nodeDistance
 				bestNodeIndex = i
@@ -331,7 +350,7 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 	table.insert(optimizedTour, table.remove(tour, 1))
 	
 	if loopTour then
-		totalCost = totalCost + heuristic(optimizedTour[1], optimizedTour[#optimizedTour])
+		totalCost = totalCost + heuristicCost(optimizedTour[1], optimizedTour[#optimizedTour])
 	else
 		local dummyIndex = utils.findIndex(optimizedTour, dummyNode)
 		print(dummyIndex)
@@ -347,7 +366,9 @@ function navigation.tspGreedy(initialTour, startNode, endNode)
 	return optimizedTour, totalCost
 end
 
-function navigation.tspTwoOpt(tour, startNode, endNode)
+function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
+	assert(tour and #tour > 0, "No nodes supplied to arrange in a tour")
+	heuristic = heuristic or navigation.heuristicEuclidean
 	local loopTour = startNode == nil or endNode == nil
 	local optimizedTour = utils.deepCopy(tour)
 
@@ -367,11 +388,11 @@ function navigation.tspTwoOpt(tour, startNode, endNode)
 	local heuristicCost = function(tour)
 		local totalCost = 0
 		for i = 1, #tour - 1 do
-			totalCost = totalCost + navigation.heuristicEuclidean(tour[i], tour[i+1])
+			totalCost = totalCost + heuristic(tour[i], tour[i+1])
 		end
 
 		if loopTour then
-			totalCost = totalCost + navigation.heuristicEuclidean(tour[1], tour[#tour])
+			totalCost = totalCost + heuristic(tour[1], tour[#tour])
 		end
 		return totalCost
 	end
@@ -514,9 +535,11 @@ function navigation.navigatePath(path, skipGoal)
 	end
 end
 
-function navigation.goTo(goal, skipGoal, start, startOrientation, cost, heuristic)
-	local path, cost = navigation.aStar(goal, start, startOrientation, cost, heuristic)
+function navigation.goTo(goals, skipGoal, start, startOrientation, cost, heuristic)
+	local path, cost = navigation.aStar(goals, start, startOrientation, cost, heuristic)
 	navigation.navigatePath(path, skipGoal)
+	-- return goal (if user supplied multiple goals he might not know which was the closest) and cost taken to reach there
+	return path[1], cost
 end
 
 return navigation
