@@ -47,7 +47,7 @@ function debug.drawText(vector, text, color, opacity, fontSize)
 	textWidget.setText(text)
 	textWidget.setFontSize(fontSize)
 	textWidget.addTranslation(vector.x, vector.y, vector.z)
-	textWidget.addColor(color[1], color[2], color[3], opacity)
+	textWidget.addColor(color.x, color.y, color.z, opacity)
 	textWidget.setVisibleThroughObjects(true)
 end
 
