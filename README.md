@@ -19,7 +19,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
 - [ ] Efficient mining
   - [x] Scanning ore locations with the geolyzer
   - [x] Planning efficient path with TSP algorithms
-  - [ ] Going between and mining ore lumps
+  - [x] Going between and mining ore lumps
   - [ ] Unloading mined resources at the base
   - [ ] Pathfinding to a new, unvisited chunk, scanning it before moving into it
 - [ ] Seeking specific mob types and killing them
