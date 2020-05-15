@@ -6,11 +6,6 @@ local utils = {}
 
 -- checks if element already exists in a table
 function utils.hasValue(tab, value)
-	for index, element in ipairs(tab) do
-		if element == value then
-			return true
-		end
-	end
 	for k, v in pairs(tab) do
 		if v == value then
 			return true
@@ -20,12 +15,7 @@ function utils.hasValue(tab, value)
 end
 
 function utils.hasKey(tab, key)
-	for k, v in pairs(tab) do
-		if k == key then
-			return true
-		end
-	end
-	return false
+	return tab[key] ~= nil
 end
 
 function utils.keys(tab)
