@@ -308,7 +308,7 @@ end
 -- performs traveling salesman problem algorithm using nearest neighbour algorithm
 function navigation.tspGreedy(initialTour, startNode, endNode, heuristic)
 	assert(initialTour and #initialTour > 0, "No nodes supplied to arrange in a tour")
-	heuristic = heuristic or navigation.heuristicEuclidean
+	heuristic = heuristic or navigation.heuristicManhattan
 	local optimizedTour = {}
 	local tour = utils.deepCopy(initialTour)
 	local totalCost = 0
@@ -377,7 +377,7 @@ end
 
 function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 	assert(tour and #tour > 0, "No nodes supplied to arrange in a tour")
-	heuristic = heuristic or navigation.heuristicEuclidean
+	heuristic = heuristic or navigation.heuristicManhattan
 	local loopTour = startNode == nil or endNode == nil
 	local optimizedTour = utils.deepCopy(tour)
 
