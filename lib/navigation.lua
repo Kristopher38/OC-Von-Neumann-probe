@@ -81,10 +81,19 @@ end
 
 --[[ calculates the block's orientation relative to fromOrientation (robot.orientation
 by default, which means - on which side of the robot it is), either specifying
-the block coordinates (toNode) or it's orientation (toOrientation) as from
+the block coordinates or it's orientation (toNodeOrOrientation) as from
 calcOrientation (used for smart turning) --]]
-function navigation.relativeOrientation(fromNode, toNode, fromOrientation, toOrientation) 
+function navigation.relativeOrientation(fromNode, toNodeOrOrientation, fromOrientation)
+	local toNode
+	local toOrientation
+	if utils.isInstance(toNodeOrOrientation, vec3) then
+		toNode = toNodeOrOrientation
+	else
+		toOrientation = toNodeOrOrientation
+	end
 	fromOrientation = fromOrientation or robot.orientation
+	--[[ if toOrientation is specified, toNode is nil so we don't call calcOrientation with invalid param
+	if on the other hand toOrientation is nil, toNode is specified instead and we can calculate orientation from it --]]
 	toOrientation = toOrientation or navigation.calcOrientation(fromNode, toNode, fromOrientation, true)
 	if toOrientation == fromOrientation then
 		return sides.front
@@ -453,14 +462,14 @@ function navigation.nearestBlock(nodes, fromNode, heuristic)
 	return minVector, minDist
 end
 
---[[ performs robot turning with minimal number of turns, either specifying direction
-or node to turn towards --]]
-function navigation.smartTurn(direction, node)
+--[[ performs robot turning with minimal number of turns, either by specifying direction
+or node to turn towards, returns robot's orientation after turning --]]
+function navigation.faceBlock(nodeOrDirection)
     -- check if we're not already facing the desired direction 
-	if robot.orientation ~= direction then
+	if robot.orientation ~= nodeOrDirection then
 		--[[ returns block's relative orientation based either on the node to which we should turn towards or the
 		direction the node is facing as returned from calcOrientation --]]
-		local relativeOrientation = navigation.relativeOrientation(robot.position, node, robot.orientation, direction)
+		local relativeOrientation = navigation.relativeOrientation(robot.position, nodeOrDirection, robot.orientation)
 		if relativeOrientation == sides.left then
 			robot.turnLeft()
 		elseif relativeOrientation == sides.right then
@@ -470,11 +479,6 @@ function navigation.smartTurn(direction, node)
 		end
 	end
 	return robot.orientation
-end
-
--- turns the robot to face adjacent block (node) with minimal number of turns and returns it's orientation after turning
-function navigation.faceBlock(node)
-	return navigation.smartTurn(nil, node)
 end
 
 --[[ performs robot navigation through a path which should be a table of adjacent
