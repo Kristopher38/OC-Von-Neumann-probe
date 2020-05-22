@@ -64,7 +64,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
 
 \*Additional inventory upgrades go into the upgrade containers, design subject to change
 
+\*Wireless network card is tier 1 because it doesn't require ender pearls to craft and those are hard to get
+
 ### Base cost for robot without any upgrades\*
 ![Base cost](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/basecost.png?raw=true)
-
-\*Wireless network card is tier 1 because it doesn't require ender pearls to craft and those are hard to get
