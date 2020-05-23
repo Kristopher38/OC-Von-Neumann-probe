@@ -66,5 +66,29 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
 
 \*Wireless network card is tier 1 because it doesn't require ender pearls to craft and those are hard to get
 
-### Base cost for robot without any upgrades\*
+### Base cost for robot without any upgrades
 ![Base cost](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/basecost.png?raw=true)
+
+### Cost for robot upgrades
+![Upgrades cost](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/upgrades.png?raw=true)
+
+### Combined costs for robot and its upgrades
+![Combined cost](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/combined.png?raw=true)
+
+### Summarized material list
+Quantity | Material | Method of acquisition
+-------- | -------- | ---------------------
+3 | Eye of Ender | Trading in villages (need to find a village)
+15 | Cactus | Harvesting in the desert (need to find a desert)
+30 | furnace fuel | From coal/wood
+60 | Clay (item) | Harvesting from the river (need to find a river)
+138 | Redstone | Mining
+45 | Sugar Canes | Harvesting from the river (need to find a river)
+35 | Gold Ingot | Mining
+79 | Iron Ingot | Mining
+58 | Diamond | Mining
+82 | Cobblestone | Mining
+41 | Oak Wood | Harvesting from the sorrounding area (need to find a biome with trees)
+5 | Emerald | Mining, trading in villages (need to find a village)
+2 | Obsidian | Artificially making it with water and lava
+1 | Sand | Harvesting from the river or the desert (need to find a river/desert)
