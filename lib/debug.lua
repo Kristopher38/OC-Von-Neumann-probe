@@ -51,13 +51,6 @@ function debug.drawText(vector, text, color, opacity, fontSize)
 	textWidget.setVisibleThroughObjects(true)
 end
 
-function debug.clearWidgets()
-	debugCubes = VectorMap(true, true)
-	debugCubeColors = VectorMap(false, true)
-	debugShapes = {}
-    glasses.removeAll()
-end
-
 local debugCubes = VectorMap(true, true)
 local debugCubeColors = VectorMap(false, true)
 local debugShapes = {}
@@ -65,6 +58,13 @@ function debug.drawCubeShape(vector, color)
 	color = color or debug.color.red
 	debugCubes[vector] = color
 	debugCubeColors[color] = true
+end
+
+function debug.clearWidgets()
+	debugCubes = VectorMap(true, true)
+	debugCubeColors = VectorMap(false, true)
+	debugShapes = {}
+    glasses.removeAll()
 end
 
 function debug.drawLineShape(vectorA, vectorB, color, opacity, scale)
