@@ -89,7 +89,7 @@ for x = 0, math.ceil(problem.x / solution.x) - 1 do
             overflow.x = math.max(0, overflow.x)
             overflow.y = math.max(0, overflow.y)
             overflow.z = math.max(0, overflow.z)
-            local truncated = utils.deepCopy(solution) - overflow
+            local truncated = solution - overflow
             drawBigCube(pos + offset, truncated, debug.color.blue)
             debug.commit()
             os.sleep(0.1)

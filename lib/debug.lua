@@ -112,6 +112,37 @@ function debug.drawLineShape(vectorA, vectorB, color, opacity, scale)
 	line.loadOBJ(table.concat(objShape, "\n"))
 end
 
+function debug.drawCubeOutline(startVector, sizeVector, color)
+    for x = 0, sizeVector.x - 1 do
+        debug.drawCubeShape(startVector + vec3(x, 0, 0), color)
+        debug.drawCubeShape(startVector + vec3(x, sizeVector.y - 1, 0), color)
+        debug.drawCubeShape(startVector + vec3(x, 0, sizeVector.z - 1), color)
+        debug.drawCubeShape(startVector + vec3(x, sizeVector.y - 1, sizeVector.z - 1), color)
+    end
+    for y = 0, sizeVector.y - 1 do
+        debug.drawCubeShape(startVector + vec3(0, y, 0), color)
+        debug.drawCubeShape(startVector + vec3(sizeVector.x - 1, y, 0), color)
+        debug.drawCubeShape(startVector + vec3(0, y, sizeVector.z - 1), color)
+        debug.drawCubeShape(startVector + vec3(sizeVector.x - 1, y, sizeVector.z - 1), color)
+    end
+    for z = 0, sizeVector.z - 1 do
+        debug.drawCubeShape(startVector + vec3(0, 0, z), color)
+        debug.drawCubeShape(startVector + vec3(sizeVector.x - 1, 0, z), color)
+        debug.drawCubeShape(startVector + vec3(0, sizeVector.y - 1, z), color)
+        debug.drawCubeShape(startVector + vec3(sizeVector.x - 1, sizeVector.y - 1, z), color)
+    end
+end
+
+function debug.drawBigCube(startVector, sizeVector, color)
+    for x = 0, sizeVector.x - 1 do
+        for y = 0, sizeVector.y - 1 do
+            for z = 0, sizeVector.z - 1 do
+                debug.drawCubeShape(startVector + vec3(x, y, z), color)
+            end
+        end
+    end
+end
+
 function debug.commit()
 	local function concatDivide(t, sep, i, j)
 		sep = sep or " "
