@@ -1,7 +1,3 @@
-local robot = require("robot")
-local component = require("component")
-local geolyzer = component.geolyzer
-
 local vec3 = require("vec3")
 local VectorMap = require("vectormap")
 local blockType = require("blocktype")

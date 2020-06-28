@@ -8,6 +8,7 @@ local vec3 = require("vec3")
 local PriorityQueue = require("priorityqueue")
 local VectorMap = require("vectormap")
 local map = require("map")
+local blacklistMap = require("blacklistmap")
 local debug = require("debug")
 local VectorChunk = require("vectorchunk")
 local blockType = require("blocktype")
@@ -170,7 +171,7 @@ function navigation.neighbours(node)
 	for i, offsetVector in ipairs(offsetVectors) do
 		local neighbourNode = node + offsetVector
 		-- don't bother returning neighbour for y = 0 since it's all bedrock
-		if neighbourNode.y < 256 and neighbourNode.y > 0 then
+		if neighbourNode.y < 256 and neighbourNode.y > 0 and not blacklistMap[neighbourNode] then
 			-- little optimization to not query map every time as it's costly (bedrock exists only on y <= 4)
 			if neighbourNode.y < 5 then
 				if map.assumeBlockType(map[neighbourNode]) ~= blockType.bedrock then
@@ -235,7 +236,7 @@ and cost to reach the goal block --]]
 function navigation.aStar(goals, start, startOrientation, cost, heuristic, neighbours)
 	--local startMem = utils.freeMemory()
 	goals = utils.isInstance(goals, vec3) and {goals} or goals
-	assert(#goals > 0, "No goals supplied to find paths to")
+    assert(#goals > 0, "No goals supplied to find paths to")
 	start = start or robot.position
 	startOrientation = startOrientation or robot.orientation
 	cost = cost or navigation.costTime
@@ -250,12 +251,25 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
 		end
 		return min
 	end
-	neighbours = neighbours or navigation.neighbours
+    neighbours = neighbours or navigation.neighbours
+
 	local openQueue = PriorityQueue()
 	local cameFrom = VectorChunk(true)
 	local costSoFar = VectorChunk()
-	local orientation = VectorChunk()
-	local closestGoal
+    local orientation = VectorChunk()
+    local closestGoal
+
+    --[[ Temporarily unblacklist blocks that are on the goals list, so that the neighbours function can actually
+    return the goal block, otherwise the algorithm runs out of memory. If there are multiple goals, a path that goes
+    through a blacklisted block that was unblacklisted here won't ever be returned, because that would mean there's
+    a block that's nearer than the one we're going to, so a path to that nearer block will be returned instead. --]]
+    local unblacklisted = {}
+    for _, goal in ipairs(goals) do
+        if blacklistMap[goal] then
+            blacklistMap[goal] = false
+            unblacklisted[#unblacklisted + 1] = goal
+        end
+    end
 	
 	openQueue:put(start, 0)
 	costSoFar[start] = 0
@@ -286,6 +300,11 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
 		end
 
 		autoyielder.yield()
+    end
+
+    -- blacklist previously unblacklisted blocks
+    for _, block in ipairs(unblacklisted) do
+        blacklistMap[block] = true
     end
     
 	-- reconstruct path
