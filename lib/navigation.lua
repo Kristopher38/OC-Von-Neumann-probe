@@ -74,6 +74,20 @@ function navigation.calcOrientation(fromNode, toNode, fromOrientation, respectVe
 	end
 end
 
+function navigation.areBlocksAdjacent(first, second)
+    local delta = first - second
+    return (math.abs(delta.x) + math.abs(delta.y) + math.abs(delta.z)) == 1
+end
+
+function navigation.adjacentBlock(position, blockTable)
+    position = position or robot.position
+    for i = 1, #blockTable do
+        if nav.areBlocksAdjacent(position, blockTable[i]) then
+            return blockTable[i]
+        end
+    end
+end
+
 function navigation.isOppositeDirection(orientationFirst, orientationSecond)
 	--[[ sides api numbers are so that if you do integer division by 2 on them,
 	it means that one direction is opposite to the other --]]
@@ -185,7 +199,7 @@ function navigation.neighbours(node)
 	return neighbourNodes
 end
 
--- returns manhattan distance between two blocks (nodes)
+-- returns manhattan distance between two blocks (nodes) with additional turning cost
 function navigation.heuristicManhattan(fromNode, toNode)
 	return math.abs(fromNode.x - toNode.x) + 
 		   math.abs(fromNode.y - toNode.y) +

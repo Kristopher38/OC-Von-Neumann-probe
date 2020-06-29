@@ -1,5 +1,6 @@
 local component = require("component")
 local robotApi = require("robotapiload") -- workaround script for magic filesystem with robot.lua
+local Inventory = require("inventory")
 local event = require("event")
 local utils = require("utils")
 local inspect = require("inspect")
@@ -363,12 +364,10 @@ function start()
     robot.drop = customDrop
     robot.suck = customSuck
 
-    robot.inventory = {}
+    robot.inventory = Inventory(robot.inventorySize())
     robot.inventory.selectedSlot = robot.select()
-    robot.inventory.size = robot.inventorySize()
 
     -- init which requires inventory controller --
-    robot.inventory.slots = {}
     for i = 1, robot.inventory.size do
         if robot.count(i) > 0 then
             robot.inventory.slots[i] = invcontroller.getStackInInternalSlot(i)
