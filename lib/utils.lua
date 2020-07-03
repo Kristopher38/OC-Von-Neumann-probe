@@ -109,7 +109,7 @@ end
 
 -- checks if object is an instance of class by comparing metatables
 function utils.isInstance(instance, class)
-	return getmetatable(instance) == class
+	return class ~= nil and getmetatable(instance) == class
 end
 
 --[[ deepcopy a table, credits to tylerneylon,
