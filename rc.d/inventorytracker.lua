@@ -40,21 +40,7 @@ local function changeEvent(eventName, slot)
     end
 end
 
--- deducts amount of items from specified slot of memory representation of inventory, returns amount of items left 
-local function deductFromSlot(slot, amount)
-    local selectedSlot = robot.inventory.slots[slot]
-    if selectedSlot ~= nil then
-        selectedSlot.size = selectedSlot.size - amount
-        if selectedSlot.size <= 0 then
-            robot.inventory.slots[slot] = nil
-            return 0
-        else
-            return selectedSlot.size
-        end
-    else
-        return 0
-    end
-end
+
 
 local function customSwingLogic(success)
     if success then
@@ -185,7 +171,7 @@ local function customUse(side, sneaky, duration)
 
     if success then
         if interaction == "item_placed" then
-            deductFromSlot(robot.inventory.tool, 1)
+            robot.inventory:deductFromSlot(robot.inventory.tool, 1)
         end
     end
 
@@ -197,7 +183,7 @@ local function customPlace(side, sneaky)
     local success, reason = originalPlace(side, sneaky)
 
     if success then
-        deductFromSlot(robot.inventory.selectedSlot, 1)
+        robot.inventory:deductFromSlot(robot.inventory.selectedSlot, 1)
     end
 
     return success, reason
@@ -230,7 +216,7 @@ local function customTransferTo(toSlot, amount)
                     --[[ if success is true that means the items are stackable --]]
                     if success then
                         local newSlotSize = robot.count(toSlot)
-                        deductFromSlot(selectedSlot, newSlotSize - robot.inventory.slots[toSlot].size)
+                        robot.inventory:deductFromSlot(selectedSlot, newSlotSize - robot.inventory.slots[toSlot].size)
                         robot.inventory.slots[toSlot].size = newSlotSize
                         --[[ we don't need to check if there are no items left in the selectedSlot since it doesn't generate an event
                         in this case --]]
@@ -255,7 +241,7 @@ local function customTransferTo(toSlot, amount)
                 local newSlotSize = robot.count(toSlot)
                 robot.inventory.slots[toSlot] = utils.deepCopy(robot.inventory.slots[selectedSlot])
                 robot.inventory.slots[toSlot].size = newSlotSize
-                local itemsLeft = deductFromSlot(selectedSlot, newSlotSize)
+                local itemsLeft = robot.inventory:deductFromSlot(selectedSlot, newSlotSize)
                 if itemsLeft == 0 then
                     ignoreUpdates[selectedSlot] = ignoreUpdates[selectedSlot] + 1
                 end
@@ -337,7 +323,7 @@ local function customCraft(amount, singleCraftAmount)
     for i = 1, 11 do
         -- skip elements which are not in the crafting area, empty ones and those already updated by customSuckLogic
         if i % 4 ~= 0 and robot.inventory.slots[i] and not utils.hasValue(suckedToSlots, i) then
-            deductFromSlot(i, robot.inventory.slots[i].size - robot.count(i))
+            robot.inventory:deductFromSlot(i, robot.inventory.slots[i].size - robot.count(i))
         end
     end
     --[[ note: if crafted item goes into the crafting area we can't easily detect to which slot, because while in reality

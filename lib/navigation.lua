@@ -82,7 +82,7 @@ end
 function navigation.adjacentBlock(position, blockTable)
     position = position or robot.position
     for i = 1, #blockTable do
-        if nav.areBlocksAdjacent(position, blockTable[i]) then
+        if navigation.areBlocksAdjacent(position, blockTable[i]) then
             return blockTable[i]
         end
     end

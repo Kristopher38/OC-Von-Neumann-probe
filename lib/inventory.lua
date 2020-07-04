@@ -38,4 +38,29 @@ function Inventory:isItemAt(item, index)
     return invItem and self:compareItems(item, invItem)
 end
 
+--[[ deducts amount of items from specified slot, returns amount of items left --]] 
+function Inventory:deductFromSlot(slot, amount)
+    local selectedSlot = self.slots[slot]
+    if selectedSlot then
+        selectedSlot.size = selectedSlot.size - amount
+        if selectedSlot.size <= 0 then
+            self.slots[slot] = nil
+            return 0
+        else
+            return selectedSlot.size
+        end
+    else
+        return 0
+    end
+end
+
+--[[ returns first empty inventory slot index, if there are no empty slots returns nil ]]
+function Inventory:emptySlot()
+    for i = 1, self.size do
+        if self.inventory.slots[i] then
+            return i
+        end
+    end
+end
+
 return Inventory
