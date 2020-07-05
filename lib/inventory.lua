@@ -57,7 +57,7 @@ end
 --[[ returns first empty inventory slot index, if there are no empty slots returns nil ]]
 function Inventory:emptySlot()
     for i = 1, self.size do
-        if self.inventory.slots[i] then
+        if not self.slots[i] then
             return i
         end
     end

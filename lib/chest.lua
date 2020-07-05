@@ -10,7 +10,7 @@ local invcontroller = component.inventory_controller
 
 local Chest = {}
 Chest.__index = Chest
-setmetatable(Chest, {__call = function(cls, positions, size)
+setmetatable(Chest, {__index = Inventory, __call = function(cls, positions, size)
     positions = utils.isInstance(positions, vec3) and {positions} or positions -- where the chest blocks are located in the world (this allows for multiblock storage)
     local self = Inventory(size or #positions * 27) -- amount of slots which the chest has defaults to 27 * number of blocks (standard minecraft chest)
     self.blocks = positions
@@ -40,8 +40,6 @@ function Chest:put(itemOrIndex, amount)
     local itemIndex
     local dropIndex
     if type(itemOrIndex) == "table" then -- itemOrIndex is an item
-        local inspect = require("inspect")
-        print(inspect(robot.inventory))
         itemIndex = robot.inventory:findIndex(itemOrIndex, 1)
         dropIndex = self:findIndex(item, 1)
     else -- itemOrIndex is an index
@@ -49,7 +47,7 @@ function Chest:put(itemOrIndex, amount)
         dropIndex = self:findIndex(robot.inventory.slots[itemOrIndex], 1)
     end
     assert(itemIndex, "Specified item not found in the robot inventory")
-    dropIndex = dropIndex or self.inventory:emptySlot() -- default to first empty slot
+    dropIndex = dropIndex or self:emptySlot() -- default to first empty slot
     assert(dropIndex, "No space left in the chest for the specified item")
 
     local item = robot.inventory.slots[itemIndex]
@@ -60,11 +58,11 @@ function Chest:put(itemOrIndex, amount)
     local deltaSize = beforeSize - robot.count()
 
     if deltaSize > 0 then
-        if self.inventory.slots[itemIndex] == nil then
-            self.inventory.slots[itemIndex] = item
-            self.inventory.slots[itemIndex].size = deltaSize
+        if self.slots[itemIndex] == nil then
+            self.slots[itemIndex] = item
+            self.slots[itemIndex].size = deltaSize
         else
-            self.inventory.slots[itemIndex].size = self.inventory.slots[itemIndex].size + deltaSize
+            self.slots[itemIndex].size = self.slots[itemIndex].size + deltaSize
         end
     end
 end
