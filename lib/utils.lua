@@ -149,4 +149,17 @@ function utils.shallowCompare(obj1, obj2, ignoreKeys)
 	return true
 end
 
+function utils.makeClass(constructor, parentClass)
+    local class = {}
+    class.__index = class
+    setmetatable(class, {
+        __index = parentClass,
+        __call = function(cls, ...)
+            local self = constructor(...)
+            setmetatable(self, cls)
+            return self
+        end
+    })
+end
+
 return utils

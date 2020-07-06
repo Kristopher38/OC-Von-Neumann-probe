@@ -13,7 +13,7 @@ Chest.__index = Chest
 setmetatable(Chest, {__index = Inventory, __call = function(cls, positions, size)
     positions = utils.isInstance(positions, vec3) and {positions} or positions -- where the chest blocks are located in the world (this allows for multiblock storage)
     local self = Inventory(size or #positions * 27) -- amount of slots which the chest has defaults to 27 * number of blocks (standard minecraft chest)
-    self.blocks = positions
+    self.positions = positions
     -- automatically add chest positions to blacklist
     for i = 1, #positions do
         blacklistMap[positions[i]] = true
@@ -24,12 +24,12 @@ end })
 
 --[[ navigates to the chest position --]]
 function Chest:goTo()
-    nav.goTo(self.blocks, true)
+    nav.goTo(self.positions, true)
 end
 
 --[[ returns on which side of the robot the chest is --]]
 function Chest:relativeOrientation()
-    local adjacentBlock = nav.adjacentBlock(robot.position, self.blocks)
+    local adjacentBlock = nav.adjacentBlock(robot.position, self.positions)
     assert(adjacentBlock, "Robot is not adjacent to the chest")
     return nav.relativeOrientation(robot.position, adjacentBlock)
 end
@@ -81,7 +81,7 @@ function Chest:put(itemOrIndex, amount)
     return amount - amountLeft
 end
 
-function Chest:retrieve(itemOrIndex, amount)
+function Chest:take(itemOrIndex, amount)
 
 end
 
