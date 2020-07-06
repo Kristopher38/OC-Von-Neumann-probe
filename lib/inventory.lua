@@ -10,21 +10,39 @@ setmetatable(Inventory, {__call = function(cls, size)
 	return self
 end })
 
---[[ compares two item tables, only by name and label fields --]]
+--[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
 function Inventory:compareItems(first, second)
-    return first.name and second.name and first.name == second.name and
-           first.label and second.label and first.label == second.label
+    local haveName = first.name and second.name
+    local haveLabel = first.label and second.label
+    if haveName and haveLabel then
+        return first.name == second.name and first.label == second.label
+    elseif haveName then
+        return first.name == second.name
+    elseif haveLabel then
+        return first.label == second.label
+    end
 end
 
 --[[ finds the first occurrence of a specified item in the inventory, returns the index at which the item was found --]]
-function Inventory:findIndex(item, minAmount)
+function Inventory:findIndex(item, minAmount, notFull)
     minAmount = minAmount or (item.size or 1) -- minAmount overrides item.size, but item.size (or 1) is used if there's no minAmount specified
     for i = 1, self.size do
         local invItem = self.slots[i]
-        if invItem and self:compareItems(item, invItem) and invItem.size >= minAmount then
+        if invItem and self:compareItems(item, invItem) and invItem.size >= minAmount and (not notFull or invItem.size < invItem.maxSize) then
             return i
         end
     end
+end
+
+function Inventory:count(item)
+    local count = 0
+    for i = 1, self.size do
+        local invItem = self.slots[i]
+        if invItem and self:compareItems(item, invItem) then
+            count = count + invItem.size
+        end
+    end
+    return count
 end
 
 --[[ checks whether a specified item exists in the inventory, compares only name and label --]]
@@ -60,6 +78,21 @@ function Inventory:emptySlot()
         if not self.slots[i] then
             return i
         end
+    end
+end
+
+--[[ prints the inventory contents with slot number, item name and amount for each slot in the inventory, for debugging purposes ]]
+function Inventory:printContents()
+    local i = 0
+    for slot, item in pairs(self.slots) do
+        local colon = string.find(item.name, ":")
+        io.stdout:write("[" .. tostring(slot) .. "] " .. string.sub(item.name, colon + 1) .. " = " .. tostring(item.size))
+        if i % 2 == 0 then
+            io.stdout:write("\t")
+        else
+            io.stdout:write("\n")
+        end
+        i = i + 1
     end
 end
 

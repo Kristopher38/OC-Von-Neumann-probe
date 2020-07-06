@@ -393,20 +393,6 @@ function start()
         tractorBeam.suck = customTractorBeamSuck
     end
 
-    robot.inventory.dbg = function()
-        local i = 0
-        for slot, item in pairs(robot.inventory.slots) do
-            local colon = string.find(item.name, ":")
-            io.stdout:write("[" .. tostring(slot) .. "] " .. string.sub(item.name, colon + 1) .. " = " .. tostring(item.size))
-            if i % 2 == 0 then
-                io.stdout:write("\t")
-            else
-                io.stdout:write("\n")
-            end
-            i = i + 1
-        end
-    end
-
     robot.inventory.ign = function()
         for i = 1, robot.inventory.size do
             io.stdout:write("[" .. tostring(i) .. "] = " .. tostring(ignoreUpdates[i]))

@@ -9,4 +9,7 @@ local Inventory = require("inventory")
 
 c = Chest(vec3(86, 64, 827), 27)
 
-c:put({name = "minecraft:cobblestone", label="Cobblestone"})
+c:refresh()
+local item = {label = "Cobblestone"}
+print(c:put(item, robot.inventory:count(item)))
+c:printContents()

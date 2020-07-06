@@ -34,37 +34,51 @@ function Chest:relativeOrientation()
     return nav.relativeOrientation(robot.position, adjacentBlock)
 end
 
+function Chest:refresh()
+    local side = self:relativeOrientation()
+    self.size = invcontroller.getInventorySize(side)
+
+    for i = 1, self.size do
+        self.slots[i] = invcontroller.getStackInSlot(side, i)
+    end
+end
+
 function Chest:put(itemOrIndex, amount)
     amount = amount or 1
+    local amountLeft = amount
     local side = self:relativeOrientation()
-    local itemIndex
-    local dropIndex
-    if type(itemOrIndex) == "table" then -- itemOrIndex is an item
-        itemIndex = robot.inventory:findIndex(itemOrIndex, 1)
-        dropIndex = self:findIndex(item, 1)
-    else -- itemOrIndex is an index
-        itemIndex = itemOrIndex
-        dropIndex = self:findIndex(robot.inventory.slots[itemOrIndex], 1)
-    end
-    assert(itemIndex, "Specified item not found in the robot inventory")
-    dropIndex = dropIndex or self:emptySlot() -- default to first empty slot
-    assert(dropIndex, "No space left in the chest for the specified item")
+    while amountLeft > 0 do
+        local itemIndex
+        local dropIndex
+        if type(itemOrIndex) == "table" then -- itemOrIndex is an item
+            itemIndex = robot.inventory:findIndex(itemOrIndex, 1)
+            dropIndex = self:findIndex(itemOrIndex, 1, true)
+        else -- itemOrIndex is an index
+            itemIndex = itemOrIndex
+            dropIndex = self:findIndex(robot.inventory.slots[itemOrIndex], 1, true)
+        end
+        dropIndex = dropIndex or self:emptySlot() -- take first empty slot if no already present item found or slot is full
+        if not itemIndex or not dropIndex then
+            break
+        end
 
-    local item = robot.inventory.slots[itemIndex]
+        local item = robot.inventory.slots[itemIndex]
+        robot.select(itemIndex)
+        local beforeSize = robot.count()
+        invcontroller.dropIntoSlot(side, dropIndex, amountLeft)
+        local deltaSize = beforeSize - robot.count()
+        amountLeft = amountLeft - deltaSize
 
-    robot.select(itemIndex)
-    local beforeSize = robot.count()
-    invcontroller.dropIntoSlot(side, dropIndex, amount)
-    local deltaSize = beforeSize - robot.count()
-
-    if deltaSize > 0 then
-        if self.slots[itemIndex] == nil then
-            self.slots[itemIndex] = item
-            self.slots[itemIndex].size = deltaSize
-        else
-            self.slots[itemIndex].size = self.slots[itemIndex].size + deltaSize
+        if deltaSize > 0 then
+            if self.slots[dropIndex] == nil then
+                self.slots[dropIndex] = item
+                self.slots[dropIndex].size = deltaSize
+            else
+                self.slots[dropIndex].size = self.slots[dropIndex].size + deltaSize
+            end
         end
     end
+    return amount - amountLeft
 end
 
 function Chest:retrieve(itemOrIndex, amount)
