@@ -13,3 +13,5 @@ c:refresh()
 local item = {label = "Cobblestone"}
 print(c:put(item, robot.inventory:count(item)))
 c:printContents()
+print(c:take(1, 99))
+c:printContents()
