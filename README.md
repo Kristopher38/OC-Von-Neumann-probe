@@ -39,7 +39,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
     - [ ] Making a small mod to readd eye of ender trade
 - [ ] Keeping track of inventories and crafting
   - [x] Tracking robot's inventory changes by hooking to component methods
-  - [ ] Tracking base's chests' inventories, with their location
+  - [x] Tracking base's chests' inventories, with their location
   - [ ] Tracking base's furnaces' inventories and estimating their smelting progress and fuel left as time passes
   - [ ] Tracking base's energy generators' inventories and estimating their fuel left as time passes
   - [ ] Storage and retrieval of crafting recipes with some data structure
