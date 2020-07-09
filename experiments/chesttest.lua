@@ -10,8 +10,8 @@ local Inventory = require("inventory")
 c = Chest(vec3(86, 64, 827), 27)
 
 c:refresh()
-local item = {label = "Cobblestone"}
-print(c:put(item, robot.inventory:count(item)))
+local item = {label = "Cobblestone", size = 63}
+print(c:put(item, 23))
 c:printContents()
-print(c:take(1, 99))
+print(c:take(item, math.huge))
 c:printContents()

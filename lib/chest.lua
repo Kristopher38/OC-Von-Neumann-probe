@@ -34,6 +34,7 @@ function Chest:relativeOrientation()
     return nav.relativeOrientation(robot.position, adjacentBlock)
 end
 
+--[[ fully refreshes the internal in-memory cache of chest size and contents ]]
 function Chest:refresh()
     local side = self:relativeOrientation()
     self.size = invcontroller.getInventorySize(side)
@@ -43,11 +44,19 @@ function Chest:refresh()
     end
 end
 
+--[[ Puts items in the chest, provided that the robot is adjacent to it, specifying either slot index
+of the robot inventory, or item table. Amount, when the item is specified using item table
+can be in range from 1 to +inf, but the real upper limit is the actual amount of items of specified type
+in the robot inventory. This method will transfer items from different slots if an item When the item is specified
+using item table. When the item is specified using slot index, the range is from 1 to the max stack size of
+an item, and only items from that slot index will be transfered. Amount can also be specified by using the 'size'
+field in an item table, but is overriden if the 'amount' argument is set, and if none are set, 'amount'
+defaults to 1. Returns the amount of items transfered ]]
 function Chest:put(itemOrIndex, amount)
-    amount = amount or 1
-    local amountLeft = amount
+    amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
+    local amountTransfered = 0
     local side = self:relativeOrientation()
-    while amountLeft > 0 do
+    while amount > 0 do
         local itemIndex
         local targetIndex
         if type(itemOrIndex) == "table" then -- itemOrIndex is an item
@@ -58,7 +67,6 @@ function Chest:put(itemOrIndex, amount)
             targetIndex = self:findIndex(robot.inventory.slots[itemOrIndex], 1, true)
             -- when supplying index, take either maximum possible amount if amount > size, or specified amount if amount < size
             amount = math.min(robot.inventory.slots[itemIndex].size, amount)
-            amountLeft = amount
         else
             -- if itemOrIndex is not an item and not a valid slot, break and return
             break
@@ -66,16 +74,16 @@ function Chest:put(itemOrIndex, amount)
         targetIndex = targetIndex or self:emptySlot() -- take first empty slot if no already present item found or slot is full
 
         if itemIndex and targetIndex then
-            local item = robot.inventory.slots[itemIndex]
             robot.select(itemIndex)
             local beforeSize = robot.count()
-            invcontroller.dropIntoSlot(side, targetIndex, amountLeft)
+            invcontroller.dropIntoSlot(side, targetIndex, amount)
             local deltaSize = beforeSize - robot.count()
-            amountLeft = amountLeft - deltaSize
+            amount = amount - deltaSize
+            amountTransfered = amountTransfered + deltaSize
 
             if deltaSize > 0 then
                 if self.slots[targetIndex] == nil then
-                    self.slots[targetIndex] = item
+                    self.slots[targetIndex] = utils.deepCopy(robot.inventory.slots[itemIndex])
                     self.slots[targetIndex].size = deltaSize
                 else
                     self.slots[targetIndex].size = self.slots[targetIndex].size + deltaSize
@@ -87,14 +95,22 @@ function Chest:put(itemOrIndex, amount)
             break
         end
     end
-    return amount - amountLeft
+    return amountTransfered
 end
 
+--[[ Takes items from the chest, provided that the robot is adjacent to it, specifying either slot index
+of the chest inventory, or item table. Amount, when the item is specified using item table
+can be in range from 1 to +inf, but the real upper limit is the actual amount of items of specified type
+in the chest inventory. This method will transfer items from different slots if an item When the item is specified
+using item table. When the item is specified using slot index, the range is from 1 to the max stack size of
+an item, and only items from that slot index will be transfered. Amount can also be specified by using the 'size'
+field in an item table, but is overriden if the 'amount' argument is set, and if none are set, 'amount'
+defaults to 1. Returns the amount of items transfered ]]
 function Chest:take(itemOrIndex, amount)
-    amount = amount or 1
-    local amountLeft = amount
+    amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
+    local amountTransfered = 0
     local side = self:relativeOrientation()
-    while amountLeft > 0 do
+    while amount > 0 do
         local itemIndex
         local targetIndex
         if type(itemOrIndex) == "table" then -- itemOrIndex is an item
@@ -105,7 +121,6 @@ function Chest:take(itemOrIndex, amount)
             targetIndex = robot.inventory:findIndex(self.slots[itemOrIndex], 1, true)
             -- when supplying index, take either maximum possible amount if amount > size, or specified amount if amount < size
             amount = math.min(self.slots[itemIndex].size, amount)
-            amountLeft = amount
         else
             -- if itemOrIndex is not an item and not a valid slot, break and return
             break
@@ -116,10 +131,11 @@ function Chest:take(itemOrIndex, amount)
             local item = self.slots[itemIndex]
             robot.select(targetIndex)
             local beforeSize = robot.inventory:count(item)
-            invcontroller.suckFromSlot(side, itemIndex, amountLeft)
+            invcontroller.suckFromSlot(side, itemIndex, amount)
             local deltaSize = robot.inventory:count(item) - beforeSize
-            amountLeft = amountLeft - deltaSize
-
+            amount = amount - deltaSize
+            amountTransfered = amountTransfered + deltaSize
+            
             item.size = item.size - deltaSize
             if item.size <= 0 then
                 self.slots[itemIndex] = nil
@@ -127,11 +143,10 @@ function Chest:take(itemOrIndex, amount)
         else
             -- if itemIndex is nil, that means we didn't find a specified item in chest's inventory or the index is out of bounds so we break and return
             -- if targetIndex is nil, that means we didn't fin a suitable or free slots in robot's inventory so we break and return
-            -- if self.slots[itemIndex] is nil, that means chest's is empty (happens when the user supplies index) so we break and return
             break
         end
     end
-    return amount - amountLeft
+    return amountTransfered
 end
 
 return Chest

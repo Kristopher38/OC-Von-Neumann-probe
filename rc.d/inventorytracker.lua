@@ -32,15 +32,13 @@ local originalTractorBeamSuck
 local ignoreUpdates
 local function changeEvent(eventName, slot)
     if ignoreUpdates[slot] > 0 then
-        print("IGNORING SLOW UPDATE OF INVENTORY SLOT:", slot)
+        --print("IGNORING SLOW UPDATE OF INVENTORY SLOT:", slot)
         ignoreUpdates[slot] = ignoreUpdates[slot] - 1
     else
-        print("SLOW UPDATE OF INVENTORY SLOT:", slot)
+        --print("SLOW UPDATE OF INVENTORY SLOT:", slot)
         robot.inventory.slots[slot] = invcontroller.getStackInInternalSlot(slot)
     end
 end
-
-
 
 local function customSwingLogic(success)
     if success then
@@ -147,7 +145,7 @@ local function customDropLogic(success, generatesEvent)
     local selectedSlot = robot.inventory.selectedSlot
     if success then
         -- we don't have to check if slot exists because if it was empty success would be false
-        local newSlotSize = robot.count()
+        local newSlotSize = robot.count(selectedSlot)
         if newSlotSize > 0 then
             robot.inventory.slots[selectedSlot].size = newSlotSize
         else
