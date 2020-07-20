@@ -1,4 +1,5 @@
 local robot = require("robot")
+local utils = require("utils")
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -10,25 +11,12 @@ setmetatable(Inventory, {__call = function(cls, size)
 	return self
 end })
 
---[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
-function Inventory:compareItems(first, second)
-    local haveName = first.name and second.name
-    local haveLabel = first.label and second.label
-    if haveName and haveLabel then
-        return first.name == second.name and first.label == second.label
-    elseif haveName then
-        return first.name == second.name
-    elseif haveLabel then
-        return first.label == second.label
-    end
-end
-
 --[[ finds the first occurrence of a specified item in the inventory, returns the index at which the item was found --]]
 function Inventory:findIndex(item, minAmount, notFull)
     minAmount = minAmount or (item.size or 1) -- minAmount overrides item.size, but item.size (or 1) is used if there's no minAmount specified
     for i = 1, self.size do
         local invItem = self.slots[i]
-        if invItem and self:compareItems(item, invItem) and invItem.size >= minAmount and (not notFull or invItem.size < invItem.maxSize) then
+        if invItem and utils.compareItems(item, invItem) and invItem.size >= minAmount and (not notFull or invItem.size < invItem.maxSize) then
             return i
         end
     end
@@ -38,7 +26,7 @@ function Inventory:count(item)
     local count = 0
     for i = 1, self.size do
         local invItem = self.slots[i]
-        if invItem and self:compareItems(item, invItem) then
+        if invItem and utils.compareItems(item, invItem) then
             count = count + invItem.size
         end
     end
@@ -53,7 +41,7 @@ end
 --[[ checks whether a supplied item is the same as the one at the specified index --]]
 function Inventory:isItemAt(item, index)
     local invItem = self.slots[index]
-    return invItem and self:compareItems(item, invItem)
+    return invItem and utils.compareItems(item, invItem)
 end
 
 --[[ deducts amount of items from specified slot, returns amount of items left --]] 

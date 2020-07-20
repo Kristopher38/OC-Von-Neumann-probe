@@ -1,4 +1,6 @@
-local fuelsBurntime = {
+-- defines how many ticks each burnable minecraft item burns
+
+local burntimes = {
 	"minecraft:bamboo": 50,
 	"minecraft:carpet": 67,
 	"minecraft:wooden_button": 100,
@@ -74,4 +76,4 @@ local fuelsBurntime = {
 	"minecraft:lava_bucket": 20000
 }
 
-return fuelsBurntime
+return burntimes

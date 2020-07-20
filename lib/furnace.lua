@@ -4,6 +4,7 @@ local nav = require("navigation")
 local blacklistMap = require("blacklistmap")
 local component = require("component")
 local invcontroller = component.inventory_controller
+local burntimes = require("burntimes")
 
 local Furnace = utils.makeClass(function(position) 
     local self = {}
@@ -45,24 +46,43 @@ function Furnace:isCorrectlyPositioned(side)
            nav.relativeOrientation(robot.position, self.position) == side
 end
 
---[[ put fuel from robot inventory into the furnace ]]
+--[[ estimates how much time is left to smelt specified amount of items, or all items if not specified --]]
+function Furnace:timeLeft(amount)
+    local elapsedTicks = (computer.uptime() - self.lastFuelInsert) * 20 -- 20 ticks per 1 second
+    
+end
+
+--[[ put fuel from robot inventory into the furnace --]]
 function Furnace:refuel(itemOrIndex, amount)
     -- fuel ports are on 4 furnace sides, so it needs to be in front of the robot
+    local amountTransfered = 0
     if self:isCorrectlyPositioned(sides.front) then
-        local index
-        if type(itemOrIndex) == "table" then
-            index = robot.inventory:findIndex(itemOrIndex, 1)
-        else
-            index = itemOrIndex
+        while amount > 0 do
+            local index
+            if type(itemOrIndex) == "table" then
+                index = robot.inventory:findIndex(itemOrIndex, 1)
+            elseif robot.inventory.slots[itemOrIndex] then
+                index = itemOrIndex
+            else
+                break
+            end
+
+            local item = utils.deepCopy(robot.inventory.slots[index])
+            if self:timeLeft() == 0 or utils.compareItems(item, self.fuelSlot) then 
+                robot.select(index)
+                local beforeSize = robot.count()
+                invcontroller.dropIntoSlot(sides.front, 1, amount)
+                local deltaSize = beforeSize - robot.count()
+                amount = amount - deltaSize
+                amountTransfered = amountTransfered + deltaSize
+
+                self.lastFuelInsert = computer.uptime()
+            else
+                break
+            end
         end
-
-        robot.select(index)
-        local beforeSize = robot.count()
-        invcontroller.dropIntoSlot(sides.front, 1, amount)
-        local deltaSize = beforeSize - robot.count()
-
-        self.lastFuelInsert = computer.uptime()
     end
+    return amountTransfered
 end
 
 function Furnace:putRaw(itemOrIndex, amount)

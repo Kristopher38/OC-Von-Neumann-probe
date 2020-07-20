@@ -162,4 +162,17 @@ function utils.makeClass(constructor, parentClass)
     })
 end
 
+--[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
+function utils.compareItems(first, second)
+    local haveName = first.name and second.name
+    local haveLabel = first.label and second.label
+    if haveName and haveLabel then
+        return first.name == second.name and first.label == second.label
+    elseif haveName then
+        return first.name == second.name
+    elseif haveLabel then
+        return first.label == second.label
+    end
+end
+
 return utils
