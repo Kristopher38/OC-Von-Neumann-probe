@@ -1,27 +1,19 @@
 local computer = require("computer")
+local utils = require("utils")
+local logLevel = require("loglevel")
+local logHandlers = require("loghandlers")
 
-local Logging = {
-    NOTSET = 0,
-    DEBUG = 10,
-    INFO = 20,
-    WARNING = 30,
-    ERROR = 40,
-    CRITICAL = 50,
-    
-    [0] = "NOTSET",
-    [10] = "DEBUG",
-    [20] = "INFO",
-    [30] = "WARNING",
-    [40] = "ERROR",
-    [50] = "CRITICAL",
-}
+local Logging = logLevel
+
+---------- Logger class ----------
 
 local Logger = {}
 Logger.__index = Logger
-setmetatable(Logger, {__call = function(cls, name, level, format, dateFormat)
+setmetatable(Logger, {__call = function(cls, name, level, handlers, format, dateFormat)
     local self = {}
     self.name = name or "root"
-    self.level = level or Logging.INFO
+    self.level = level or logLevel.NOTSET
+    self.handlers = handlers or { logHandlers.StreamHandler(logLevel.NOTSET) }
     self.format = format or "[%s][%s] %s: %s\n" -- timestamp [name] level: message
 
 	setmetatable(self, cls)
@@ -32,42 +24,59 @@ function Logger:setLevel(level)
     self.level = level
 end
 
-function Logger:formatDate()
-    local time = computer.uptime()
+function Logger:formatDate(time)
     local ms = ((time % 1) * 1000) // 1
-    local s = (time // 1) % 60
-    local m = (time // 60) % 60
-    local h = (time // 3600) % 60
-    return string.format("%02u:%02u:%02u.%03u", h, m, s, ms)
+    return string.format("%s.%03u", os.date('%Y-%m-%d %H:%M:%S', time), ms)
+end
+
+function Logger:addHandler(handler)
+    table.insert(self.handlers, handler)
+end
+
+function Logger:removeHandler(handler)
+    for i, h in ipairs(self.handlers) do
+        if h == handler then
+            table.remove(self.handlers, i)
+            break
+        end
+    end
+end
+
+function Logger:hasHandlers()
+    return #self.handlers > 0
 end
 
 function Logger:log(level, msg, ...)
     if level >= self.level then
-        local formatted = string.format(self.format, self:formatDate(), self.name, Logging[level], string.format(msg, ...))
-        io.stdout:write(formatted)
-        io.stdout:flush()
+        local formatted = string.format(self.format, self:formatDate(utils.realTime()), self.name, Logging[level], string.format(msg, ...))
+        for i, handler in ipairs(self.handlers) do
+            handler:log(level, formatted)
+        end
     end
 end
 
 function Logger:debug(msg, ...)
-    return self:log(Logging.DEBUG, msg, ...)
+    return self:log(logLevel.DEBUG, msg, ...)
 end
 
 function Logger:info(msg, ...)
-    return self:log(Logging.INFO, msg, ...)
+    return self:log(logLevel.INFO, msg, ...)
 end
 
 function Logger:warning(msg, ...)
-    return self:log(Logging.WARNING, msg, ...)
+    return self:log(logLevel.WARNING, msg, ...)
 end
 
 function Logger:error(msg, ...)
-    return self:log(Logging.ERROR, msg, ...)
+    return self:log(logLevel.ERROR, msg, ...)
 end
 
 function Logger:critical(msg, ...)
-    return self:log(Logging.CRITICAL, msg, ...)
+    return self:log(logLevel.CRITICAL, msg, ...)
 end
+
+
+---------- Logging class ----------
 
 Logging.loggers = {
     root = Logger()
@@ -80,8 +89,6 @@ function Logging:getLogger(name)
     return self.loggers[name]
 end
 
-setmetatable(Logging, {__index = function(self, index)
-    return self.loggers.root[index]
-end })
+setmetatable(Logging, {__index = Logging.loggers.root})
 
 return Logging

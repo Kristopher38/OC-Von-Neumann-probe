@@ -1,6 +1,7 @@
 local sides = require("sides")
 local computer = require("computer")
 local event = require("event")
+local filesystem = require("filesystem")
 
 local utils = {}
 
@@ -160,6 +161,7 @@ function utils.makeClass(constructor, parentClass)
             return self
         end
     })
+    return class
 end
 
 --[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
@@ -172,6 +174,23 @@ function utils.compareItems(first, second)
         return first.name == second.name
     elseif haveLabel then
         return first.label == second.label
+    end
+end
+
+function utils.realTime()
+    local tmpName = os.tmpname()
+    -- make sure we have space in /tmp first
+    for file in filesystem.list("/tmp") do
+        filesystem.remove(filesystem.concat("/tmp", file))
+    end
+    local tmpFile = filesystem.open(tmpName, "a") -- touch file
+    if tmpFile then
+        tmpFile:close()
+        local timestamp = filesystem.lastModified(tmpName) / 1000
+        filesystem.remove(tmpName)
+        return timestamp
+    else
+        return 0
     end
 end
 
