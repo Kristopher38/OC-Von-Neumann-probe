@@ -34,7 +34,6 @@ handlers.HttpHandler = utils.makeClass(function(level, address)
             if level >= self.level then
                 local r = internet.request(address, msg)
                 r:close()
-                print("HTTP HANDLER "..msg)
             end
         end)
         return self
