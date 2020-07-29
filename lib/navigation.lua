@@ -15,7 +15,7 @@ local blockType = require("blocktype")
 local utils = require("utils")
 local autoyielder = require("autoyielder")
 local logging = require("logging")
-local log = logging:getLogger("navigation")
+local log = logging:getLogger("mining")
 log:setLevel(logging.DEBUG)
 
 local navigation = {}
