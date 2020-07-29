@@ -3,7 +3,6 @@ local component = require("component")
 local filesystem = require("filesystem")
 local serialization = require("serialization")
 local robot = component.robot
-local glasses = component.glasses
 local gpu = component.gpu
 
 local robotApi = require("robotapiload") -- workaround script for magic filesystem with robot.lua
@@ -66,8 +65,8 @@ function start()
     gpu.fill(1, 1, w, h, " ")
 
     if component.isAvailable("glasses") then
-        glasses.startLinking(username)
-        local lookingAt = glasses.getUserLookingAt(username)
+        component.glasses.startLinking(username)
+        local lookingAt = component.glasses.getUserLookingAt(username)
         local orientationString
         while sides[orientationString] == nil do
             io.stdout:write("Please enter robot's orientation in the following format: <facing: east|west|north|south>: ")

@@ -4,7 +4,7 @@ local robot = require("robot")
 
 local map = require("map")
 local vec3 = require("vec3")
-local blockType = require("blockType")
+local blockType = require("blocktype")
 local VectorChunk = require("vectorchunk")
 local VectorMap = require("vectormap")
 local utils = require("utils")
