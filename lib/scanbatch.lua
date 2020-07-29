@@ -97,7 +97,11 @@ The linear table returned from geolyzer.scan should be interpreted as: first, va
 positive x, then towards positive z, then towards positive y --]]
 function ScanBatch:scanQuad(offsetVector, sizeVector)
     offsetVector, sizeVector = self:correctForOrientation(offsetVector, sizeVector) -- correct for robot's orientation
-	local scanData = geolyzer.scan(offsetVector.x, offsetVector.z, offsetVector.y, sizeVector.x, sizeVector.z, sizeVector.y)
+    local scanData = geolyzer.scan(offsetVector.x, offsetVector.z, offsetVector.y, sizeVector.x, sizeVector.z, sizeVector.y)
+    --[[ local nav = require("navigation")
+    local sides = require("sides")
+    debug.drawBigCube(nav.coordsFromOffset(robot.position, offsetVector, sides.east), sizeVector, debug.color.blue)
+    debug.commit() --]]
     local i = 1
 	for y = 0, sizeVector.y - 1 do
 		for z = 0, sizeVector.z - 1 do
