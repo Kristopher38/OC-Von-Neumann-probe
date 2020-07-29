@@ -9,8 +9,11 @@ local map = require("map")
 
 local autoyielder = require("autoyielder")
 local logging = require("logging")
+local handlers = require("loghandlers")
 local log = logging:getLogger("mining")
 log:setLevel(logging.DEBUG)
+log:addHandler(handlers.HttpHandler(logging.DEBUG, "http://93.181.131.201:8080"))
+log:addHandler(handlers.StreamHandler(logging.DEBUG, io.open("mining.log", "a")))
 
 local component = require("component")
 local sides = require("sides")

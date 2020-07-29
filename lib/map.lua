@@ -7,7 +7,8 @@ local map = VectorMap(false, false, vec3(16, 16, 16))
 function map.assumeBlockType(hardness)
 	if hardness ~= nil then
 		if hardness < 0 then assumedType = blockType.bedrock
-		elseif hardness < 0.4 then assumedType = blockType.air
+        elseif hardness < 0.4 then assumedType = blockType.air
+        elseif hardness < 1.25 then assumedType = blockType.dirt
 		elseif hardness < 2.75 then assumedType = blockType.stone
 		elseif hardness < 95 then assumedType = blockType.ore
 		else assumedType = blockType.fluid end
