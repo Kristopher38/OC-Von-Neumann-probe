@@ -1,5 +1,8 @@
 local component = require("component")
-local glasses = component.glasses
+local glasses
+if component.isAvailable("glasses") then
+	glasses = component.glasses
+end
 
 local VectorMap = require("vectormap")
 local utils = require("utils")
