@@ -14,6 +14,9 @@ local VectorChunk = require("vectorchunk")
 local blockType = require("blocktype")
 local utils = require("utils")
 local autoyielder = require("autoyielder")
+local logging = require("logging")
+local log = logging:getLogger("navigation")
+log:setLevel(logging.DEBUG)
 
 local navigation = {}
 
@@ -249,7 +252,8 @@ Returns path as a table of vec3 coordinates from goal to start block (without th
 and cost to reach the goal block --]]
 function navigation.aStar(goals, start, startOrientation, cost, heuristic, neighbours)
 	--local startMem = utils.freeMemory()
-	goals = utils.isInstance(goals, vec3) and {goals} or goals
+    local startTime = os.clock()
+    goals = utils.isInstance(goals, vec3) and {goals} or goals
     assert(#goals > 0, "No goals supplied to find paths to")
 	start = start or robot.position
 	startOrientation = startOrientation or robot.orientation
@@ -334,6 +338,8 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
 	--[[ print("Starting memory:", startMem)
 	print("Ending memory: ", endMem)
 	print("Memory used:", startMem - endMem) ]]
+
+    log:debug("Pathfinding from %s to %s took %f", robot.position, closestGoal, os.clock() - startTime)
 
 	return path, costSoFar[closestGoal]
 end
