@@ -467,7 +467,8 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 	::startAgain::
 	for i = 2, #optimizedTour - (loopTour and 1 or 2) do
 		for k = i, #optimizedTour - (loopTour and 0 or 1) do
-			local newTour = twoOptExchange(optimizedTour, i, k)
+            autoyielder.yield()
+            local newTour = twoOptExchange(optimizedTour, i, k)
 			local newDistance = heuristicCost(newTour)
 			if newDistance < bestDistance then
 				bestDistance = newDistance
