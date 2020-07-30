@@ -252,7 +252,8 @@ Returns path as a table of vec3 coordinates from goal to start block (without th
 and cost to reach the goal block --]]
 function navigation.aStar(goals, start, startOrientation, cost, heuristic, neighbours)
 	--local startMem = utils.freeMemory()
-    local startTime = os.clock()
+    local startTimeCpu = os.clock()
+    local startTimeReal = computer.uptime()
     goals = utils.isInstance(goals, vec3) and {goals} or goals
     assert(#goals > 0, "No goals supplied to find paths to")
 	start = start or robot.position
@@ -339,7 +340,7 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
 	print("Ending memory: ", endMem)
 	print("Memory used:", startMem - endMem) ]]
 
-    log:debug("Pathfinding from %s to %s took %f", robot.position, closestGoal, os.clock() - startTime)
+    log:debug("Pathfinding from %s to %s took CPU: %f, Real: %f", robot.position, closestGoal, os.clock() - startTimeCpu, computer.uptime() - startTimeReal)
 
 	return path, costSoFar[closestGoal]
 end
