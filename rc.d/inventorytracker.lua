@@ -79,6 +79,7 @@ inventory_controller.suckFromSlot and generator.remove this should be set to fal
 events are generated per slot, not per item --]]
 local function customSuckLogic(itemsSucked, manyEventsForItem, singleCraftAmount, forceUpdateInCraftingArea)
     -- default to false
+    singleCraftAmount = singleCraftAmount or 1
     if forceUpdateInCraftingArea == nil then
         forceUpdateInCraftingArea = false
     end
