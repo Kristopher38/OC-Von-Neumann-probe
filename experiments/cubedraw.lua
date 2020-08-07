@@ -1,7 +1,7 @@
 package.loaded.debug = nil
 local dbg = require("debug")
 local vec3 = require("vec3")
-local robot = require("robot")
+local locTracker = require("locationtracker")
 local component = require("component")
 local glasses = component.glasses
 local event = require("event")
@@ -48,17 +48,17 @@ local function drawbigcube(baseOffset, size, color)
     end
 end
 
---expand(robot.position+vec3(0, 6, 0), 3)
---dbg.drawLineShape(robot.position, robot.position+vec3(0, 10, 20), nil, nil, 0.5)
+--expand(locTracker.position+vec3(0, 6, 0), 3)
+--dbg.drawLineShape(locTracker.position, locTracker.position+vec3(0, 10, 20), nil, nil, 0.5)
 
-utils.timeIt(drawbigcube, robot.position+vec3(0, 1, 0), vec3(12, 12, 12), dbg.color.green)
-utils.timeIt(drawbigcube, robot.position+vec3(-20, 1, 0), vec3(12, 12, 12), dbg.color.red)
-utils.timeIt(drawbigcube, robot.position+vec3(-20, 1, -20), vec3(12, 12, 12), dbg.color.blue)
-utils.timeIt(drawbigcube, robot.position+vec3(0, 1, -20), vec3(12, 12, 12), dbg.color.yellow)
-utils.timeIt(drawbigcube, robot.position+vec3(0, 20, -20), vec3(12, 12, 12), dbg.color.pink)
-utils.timeIt(drawbigcube, robot.position+vec3(-20, 20, -20), vec3(12, 12, 12), dbg.color.aqua)
-utils.timeIt(drawbigcube, robot.position+vec3(0, 20, 0), vec3(12, 12, 12), dbg.color.darkGreen)
-utils.timeIt(drawbigcube, robot.position+vec3(-20, 20, 0), vec3(12, 12, 12), dbg.color.white)
+utils.timeIt(drawbigcube, locTracker.position+vec3(0, 1, 0), vec3(12, 12, 12), dbg.color.green)
+utils.timeIt(drawbigcube, locTracker.position+vec3(-20, 1, 0), vec3(12, 12, 12), dbg.color.red)
+utils.timeIt(drawbigcube, locTracker.position+vec3(-20, 1, -20), vec3(12, 12, 12), dbg.color.blue)
+utils.timeIt(drawbigcube, locTracker.position+vec3(0, 1, -20), vec3(12, 12, 12), dbg.color.yellow)
+utils.timeIt(drawbigcube, locTracker.position+vec3(0, 20, -20), vec3(12, 12, 12), dbg.color.pink)
+utils.timeIt(drawbigcube, locTracker.position+vec3(-20, 20, -20), vec3(12, 12, 12), dbg.color.aqua)
+utils.timeIt(drawbigcube, locTracker.position+vec3(0, 20, 0), vec3(12, 12, 12), dbg.color.darkGreen)
+utils.timeIt(drawbigcube, locTracker.position+vec3(-20, 20, 0), vec3(12, 12, 12), dbg.color.white)
 
 utils.timeIt(dbg.commit)
 print(utils.freeMemory())

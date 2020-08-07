@@ -1,7 +1,7 @@
 package.loaded.debug = nil
 local vec3 = require("vec3")
 local debug = require("debug")
-local robot = require("robot")
+local locTracker = require("locationtracker")
 local utils = require("utils")
 local event = require("event")
 
@@ -39,7 +39,7 @@ end
 
 local problem = vec3(args[1], args[2], args[3])
 local solution = packCubes(problem)
-local offset = robot.position + vec3(1, 1, 1)
+local offset = locTracker.position + vec3(1, 1, 1)
 print(solution)
 
 local function drawCubeOutline(startVector, sizeVector, color)

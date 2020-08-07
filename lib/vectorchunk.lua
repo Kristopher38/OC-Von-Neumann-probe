@@ -1,6 +1,6 @@
 local vec3 = require("vec3")
 local utils = require("utils")
-local robot = require("robot")
+local locTracker = require("locationtracker")
 
 local VectorChunk = {}
 --VectorChunk.__index = VectorChunk
@@ -9,8 +9,8 @@ setmetatable(VectorChunk, {__call = function(cls, packValues, allowFloats, offse
     local self = {}
     self.hashData = {}
     self.arrayData = {}
-    -- default offset to robot.position, and if it doesn't exist, default to vector [0, 0, 0]
-    self.offset = offset and offset or (robot.position and (robot.position - vec3(2048, robot.position.y, 2048)) or vec3(0, 0, 0))
+    -- default offset to locTracker.position, and if it doesn't exist, default to vector [0, 0, 0]
+    self.offset = offset and offset or (locTracker.position and (locTracker.position - vec3(2048, locTracker.position.y, 2048)) or vec3(0, 0, 0))
     self.pack = allowFloats and cls.packFloat or cls.packInt
     self.unpack = allowFloats and cls.unpackFloat or cls.unpackInt
     self.packValues = packValues or false

@@ -5,6 +5,8 @@ local blacklistMap = require("blacklistmap")
 local component = require("component")
 local invcontroller = component.inventory_controller
 local burntimes = require("burntimes")
+local locTracker = require("locationtracker")
+local robot = require("robot")
 
 local Furnace = utils.makeClass(function(position) 
     local self = {}
@@ -42,8 +44,8 @@ function Furnace:goToSmelted()
 end
 
 function Furnace:isCorrectlyPositioned(side)
-    return nav.areBlocksAdjacent(robot.position, self.position) and 
-           nav.relativeOrientation(robot.position, self.position) == side
+    return nav.areBlocksAdjacent(locTracker.position, self.position) and
+           nav.relativeOrientation(locTracker.position, self.position) == side
 end
 
 --[[ estimates how much time is left to smelt specified amount of items, or all items if not specified --]]

@@ -7,7 +7,7 @@ local nav = require("navigation")
 local map = require("map")
 local utils = require("utils")
 local vec3 = require("vec3")
-local robot = require("robot")
+local locTracker = require("locationtracker")
 local ScanBatch = require("scanbatch")
 
 glasses.startLinking("Kristopher38")
@@ -24,7 +24,7 @@ while true do
 		BLOCK_POSITION_X, BLOCK_POSITION_Y, BLOCK_POSITION_Z, BLOCK_SIDE, 
 		PLAYER_ROTATION, PLAYER_PITCH, PLAYER_FACING = event.pull("interact_world_block_right")
 	local target = vec3(math.ceil(BLOCK_POSITION_X), math.ceil(BLOCK_POSITION_Y), math.ceil(BLOCK_POSITION_Z))
-	if target ~= robot.position then
+	if target ~= locTracker.position then
 		glasses.removeAll()
 		utils.timeIt(nav.goTo, target, true)
 	end

@@ -1,6 +1,6 @@
 local component = require("component")
 local geolyzer = component.geolyzer
-local robot = require("robot")
+local locTracker = require("locationtracker")
 
 local map = require("map")
 local vec3 = require("vec3")
@@ -77,13 +77,13 @@ end
 --[[ takes the offset and size vectors and rotates them so that the origin point and dimensions for
 geolyzer.scan are relative to the robot's orientation --]]
 function ScanBatch:correctForOrientation(offsetVector, sizeVector)
-    if robot.orientation == sides.east then
+    if locTracker.orientation == sides.east then
         return offsetVector, sizeVector
-    elseif robot.orientation == sides.west then
+    elseif locTracker.orientation == sides.west then
         return vec3(-offsetVector.x - sizeVector.x + 1, offsetVector.y, -offsetVector.z - sizeVector.z + 1), sizeVector
-    elseif robot.orientation == sides.south then
+    elseif locTracker.orientation == sides.south then
         return vec3(-offsetVector.z - sizeVector.z + 1, offsetVector.y, offsetVector.x), vec3(sizeVector.z, sizeVector.y, sizeVector.x)
-    else -- robot.orientation == sides.north
+    else -- locTracker.orientation == sides.north
         return vec3(offsetVector.z, offsetVector.y, -offsetVector.x - sizeVector.x + 1), vec3(sizeVector.z, sizeVector.y, sizeVector.x)
     end
 end
@@ -100,18 +100,18 @@ function ScanBatch:scanQuad(offsetVector, sizeVector)
     local scanData = geolyzer.scan(offsetVector.x, offsetVector.z, offsetVector.y, sizeVector.x, sizeVector.z, sizeVector.y)
     --[[ local nav = require("navigation")
     local sides = require("sides")
-    debug.drawBigCube(nav.coordsFromOffset(robot.position, offsetVector, sides.east), sizeVector, debug.color.blue)
+    debug.drawBigCube(nav.coordsFromOffset(locTracker.position, offsetVector, sides.east), sizeVector, debug.color.blue)
     debug.commit() --]]
     local i = 1
 	for y = 0, sizeVector.y - 1 do
 		for z = 0, sizeVector.z - 1 do
             for x = 0, sizeVector.x - 1 do
-				map[robot.position + offsetVector + vec3(x, y, z)] = scanData[i]
+				map[locTracker.position + offsetVector + vec3(x, y, z)] = scanData[i]
                 i = i + 1
 			end
 		end
     end
-    self.scans[robot.position + offsetVector] = sizeVector
+    self.scans[locTracker.position + offsetVector] = sizeVector
 end
 
 --[[ make a query for a list of coordinates containing a specific block type or specific block types,

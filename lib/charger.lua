@@ -2,7 +2,7 @@ local utils = require("utils")
 local blacklistMap = require("blacklistmap")
 local navigation = require("navigation")
 local vec3 = require("vec3")
-local robot = require("robot")
+local locTracker= require("locationtracker")
 
 local Charger = utils.makeClass(function(position)
     local self = {}
@@ -17,7 +17,7 @@ function Charger:goTo()
 end
 
 function Charger:isOn()
-    if robot.position == navigation.coordFromOffset(self.position, vec3(0, 1, 0)) then
+    if locTracker.position == navigation.coordFromOffset(self.position, vec3(0, 1, 0)) then
         local energy = computer.energy()
         os.sleep(0.5)
         return computer.energy() - energy > 0

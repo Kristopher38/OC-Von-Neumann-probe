@@ -3,6 +3,7 @@ local ScanBatch = require("scanbatch")
 local utils = require("utils")
 local VectorChunk = require("vectorchunk")
 local robot = require("robot")
+local locTracker = require("locationtracker")
 local vec3 = require("vec3")
 local blockType = require("blocktype")
 local map = require("map")
@@ -97,7 +98,7 @@ function mining.scanOre(oreSide)
 end
 
 function mining.mineOreLump(oreSide)
-    log:debug("Scanning ore lump at location %s", robot.position)
+    log:debug("Scanning ore lump at location %s", locTracker.position)
     local oresScanBatch = mining.scanOre(oreSide)
     local ores = oresScanBatch:query(blockType.ore)
     local oreLumps = mining.oreLumpsFromOres(ores)
@@ -113,7 +114,7 @@ function mining.mineOreLump(oreSide)
             -- goes to the nearest ore block
             local nearestOre = nav.goTo(oreLocations, true)
             log:debug("Mining nearest ore at %s", nearestOre)
-            robotComponent.swing(nav.relativeOrientation(robot.position, nearestOre))
+            robotComponent.swing(nav.relativeOrientation(locTracker.position, nearestOre))
             nearestOreLump[nearestOre] = nil
         end
     end
@@ -123,12 +124,12 @@ end
 function mining.mineChunk()
     local bedrockReached = false
     local scanBatch = ScanBatch()
-    local startPos = utils.deepCopy(robot.position)
+    local startPos = utils.deepCopy(locTracker.position)
 
     log:info("Mining chunk started, going down until bedrock is hit")
     while not bedrockReached do
         scanBatch:scanLayer()
-        log:debug("Free memory at Y = %u: %u", robot.position.y, utils.freeMemory())
+        log:debug("Free memory at Y = %u: %u", locTracker.position.y, utils.freeMemory())
         robot.swingDown()
         if not robot.down() then
             bedrockReached = true
@@ -140,7 +141,7 @@ function mining.mineChunk()
     log:info("Bedrock reached, found %u ore lumps", #oreLumpCenters)
     if #oreLumpCenters > 0 then
         log:info("Proceeding to mine all ore lumps")
-        local oreLumpsTour, tourDistance = nav.shortestTour(oreLumpCenters, robot.position, startPos)
+        local oreLumpsTour, tourDistance = nav.shortestTour(oreLumpCenters, locTracker.position, startPos)
         log:debug("Calculated a tour to mine ore lumps with a distance of %f", tourDistance)
         -- delete last item - starting position
         table.remove(oreLumpsTour, #oreLumpsTour)
@@ -157,7 +158,7 @@ function mining.mineChunk()
             if #oreVectors > 0 then
                 local nearestOre = nav.goTo(oreVectors, true)
                 log:debug("Went to the nearest ore (of ore lump on route): %s", nearestOre)
-                mining.mineOreLump(nav.relativeOrientation(robot.position, nearestOre))
+                mining.mineOreLump(nav.relativeOrientation(locTracker.position, nearestOre))
             end
         end
     end

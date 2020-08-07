@@ -4,6 +4,7 @@ local debug = require("debug")
 local vec3 = require("vec3")
 local event = require("event")
 local robot = require("robot")
+local locTracker = require("locationtracker")
 local ScanBatch = require("scanbatch")
 local navigation = require("navigation")
 local keyboard = require("keyboard")
@@ -22,9 +23,9 @@ local x, y, z, name
 local new = false
 
 local function motionCallback(ev, id, _x, _y, _z, _name)
-    x = robot.position.x + _x
-    y = robot.position.y + _y
-    z = robot.position.z + _z
+    x = locationTracker.position.x + _x
+    y = locationTracker.position.y + _y
+    z = locationTracker.position.z + _z
     name = _name
     new = true
 end

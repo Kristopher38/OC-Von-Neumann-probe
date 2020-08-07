@@ -2,6 +2,7 @@ local utils = require("utils")
 local Inventory = require("inventory")
 local nav = require("navigation")
 local robot = require("robot")
+local locTracker = require("locationtracker")
 local component = require("component")
 local blacklistMap = require("blacklistmap")
 local utils = require("utils")
@@ -29,9 +30,9 @@ end
 
 --[[ returns on which side of the robot the chest is --]]
 function Chest:relativeOrientation()
-    local adjacentBlock = nav.adjacentBlock(robot.position, self.positions)
+    local adjacentBlock = nav.adjacentBlock(locTracker.position, self.positions)
     assert(adjacentBlock, "Robot is not adjacent to the chest")
-    return nav.relativeOrientation(robot.position, adjacentBlock)
+    return nav.relativeOrientation(locTracker.position, adjacentBlock)
 end
 
 --[[ fully refreshes the internal in-memory cache of chest size and contents ]]

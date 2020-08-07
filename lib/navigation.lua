@@ -1,5 +1,6 @@
 local sides = require("sides")
 local robot = require("robot")
+local locTracker = require("locationtracker")
 local computer = require("computer")
 local component = require("component")
 local geolyzer = component.geolyzer
@@ -27,7 +28,7 @@ facingSide. offsetVec is a vector with three fields:
 2. moving up/down - positive is up, negative is down
 3. moving right/left - positive is right, negative is left --]]
 function navigation.coordsFromOffset(coordsVec, offsetVec, facingSide)
-	facingSide = facingSide or robot.orientation
+	facingSide = facingSide or locTracker.orientation
 	local y = coordsVec.y + offsetVec.y
 	
 	if facingSide == sides.posz then -- equivalent to sides.south
@@ -51,7 +52,7 @@ respectVertical decides whether to return identical orientation as fromOrientati
 since it doesn't change the robot's orientation, or respect vertical changes and
 return sides.negy or sides.posy when nodes are vertically adjacent --]]
 function navigation.calcOrientation(fromNode, toNode, fromOrientation, respectVertical)
-	fromOrientation = fromOrientation or robot.orientation
+	fromOrientation = fromOrientation or locTracker.orientation
 	respectVertical = respectVertical or false
 	local dx = toNode.x - fromNode.x
 	local dy = toNode.y - fromNode.y
@@ -83,7 +84,7 @@ function navigation.areBlocksAdjacent(first, second)
 end
 
 function navigation.adjacentBlock(position, blockTable)
-    position = position or robot.position
+    position = position or locTracker.position
     for i = 1, #blockTable do
         if navigation.areBlocksAdjacent(position, blockTable[i]) then
             return blockTable[i]
@@ -97,7 +98,7 @@ function navigation.isOppositeDirection(orientationFirst, orientationSecond)
 	return math.floor(orientationFirst / 2) == math.floor(orientationSecond / 2)
 end
 
---[[ calculates the block's orientation relative to fromOrientation (robot.orientation
+--[[ calculates the block's orientation relative to fromOrientation (locTracker.orientation
 by default, which means - on which side of the robot it is), either specifying
 the block coordinates or it's orientation (toNodeOrOrientation) as from
 calcOrientation (used for smart turning) --]]
@@ -109,7 +110,7 @@ function navigation.relativeOrientation(fromNode, toNodeOrOrientation, fromOrien
 	else
 		toOrientation = toNodeOrOrientation
 	end
-	fromOrientation = fromOrientation or robot.orientation
+	fromOrientation = fromOrientation or locTracker.orientation
 	--[[ if toOrientation is specified, toNode is nil so we don't call calcOrientation with invalid param
 	if on the other hand toOrientation is nil, toNode is specified instead and we can calculate orientation from it --]]
 	toOrientation = toOrientation or navigation.calcOrientation(fromNode, toNode, fromOrientation, true)
@@ -142,8 +143,8 @@ end
 function navigation.calcCostForPath(path, costFunction, skipGoal, initialPosition, initialOrientation)
 	costFunction = costFunction or navigation.costTime
 	skipGoal = skipGoal or false
-	initialPosition = initialPosition or robot.position
-	initialOrientation = initialOrientation or robot.orientation
+	initialPosition = initialPosition or locTracker.position
+	initialOrientation = initialOrientation or locTracker.orientation
 
 	local orientation = initialOrientation
 	local totalCost = navigation.costTime(initialPosition, path[#path], initialOrientation)
@@ -256,8 +257,8 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
     local startTimeReal = computer.uptime()
     goals = utils.isInstance(goals, vec3) and {goals} or goals
     assert(#goals > 0, "No goals supplied to find paths to")
-	start = start or robot.position
-	startOrientation = startOrientation or robot.orientation
+	start = start or locTracker.position
+	startOrientation = startOrientation or locTracker.orientation
 	cost = cost or navigation.costTime
 	heuristicFunc = heuristic or navigation.heuristicManhattan
 	heuristic = function(fromNode, goalsTable)
@@ -340,7 +341,7 @@ function navigation.aStar(goals, start, startOrientation, cost, heuristic, neigh
 	print("Ending memory: ", endMem)
 	print("Memory used:", startMem - endMem) ]]
 
-    log:debug("Pathfinding from %s to %s took CPU: %f, Real: %f", robot.position, closestGoal, os.clock() - startTimeCpu, computer.uptime() - startTimeReal)
+    log:debug("Pathfinding from %s to %s took CPU: %f, Real: %f", locTracker.position, closestGoal, os.clock() - startTimeCpu, computer.uptime() - startTimeReal)
 
 	return path, costSoFar[closestGoal]
 end
@@ -488,7 +489,7 @@ end
 
 -- finds nearest block to fromNode in a VectorMap or table of vectors
 function navigation.nearestBlock(nodes, fromNode, heuristic)
-	fromNode = fromNode or robot.position
+	fromNode = fromNode or locTracker.position
 	heuristic = heuristic or navigation.heuristicManhattan
     local minDist = math.huge
 	local minVector
@@ -507,10 +508,10 @@ end
 or node to turn towards, returns robot's orientation after turning --]]
 function navigation.faceBlock(nodeOrDirection)
     -- check if we're not already facing the desired direction 
-	if robot.orientation ~= nodeOrDirection then
+	if locTracker.orientation ~= nodeOrDirection then
 		--[[ returns block's relative orientation based either on the node to which we should turn towards or the
 		direction the node is facing as returned from calcOrientation --]]
-		local relativeOrientation = navigation.relativeOrientation(robot.position, nodeOrDirection, robot.orientation)
+		local relativeOrientation = navigation.relativeOrientation(locTracker.position, nodeOrDirection, locTracker.orientation)
 		if relativeOrientation == sides.left then
 			robot.turnLeft()
 		elseif relativeOrientation == sides.right then
@@ -519,7 +520,7 @@ function navigation.faceBlock(nodeOrDirection)
 			robot.turnAround()
 		end
 	end
-	return robot.orientation
+	return locTracker.orientation
 end
 
 --[[ performs robot navigation through a path which should be a table of adjacent
@@ -535,7 +536,7 @@ function navigation.navigatePath(path, skipGoal)
 		local targetOrientation = navigation.faceBlock(path[i])
         
         -- perform moving depending on vertical difference of two adjacent blocks
-		local delta = robot.position - path[i]
+		local delta = locTracker.position - path[i]
 		local nodeHasBlock = map.assumeBlockType(map[path[i]]) ~= blockType.air
 
 		--[[ safe movement with fallbacks if scan info is not accurate or sand/gravel
