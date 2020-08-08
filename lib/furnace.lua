@@ -6,6 +6,7 @@ local component = require("component")
 local invcontroller = component.inventory_controller
 local burntimes = require("burntimes")
 local locTracker = require("locationtracker")
+local invTracker = require("inventorytracker")
 local robot = require("robot")
 
 local Furnace = utils.makeClass(function(position) 
@@ -62,14 +63,14 @@ function Furnace:refuel(itemOrIndex, amount)
         while amount > 0 do
             local index
             if type(itemOrIndex) == "table" then
-                index = robot.inventory:findIndex(itemOrIndex, 1)
-            elseif robot.inventory.slots[itemOrIndex] then
+                index = invTracker.inventory:findIndex(itemOrIndex, 1)
+            elseif invTracker.inventory.slots[itemOrIndex] then
                 index = itemOrIndex
             else
                 break
             end
 
-            local item = utils.deepCopy(robot.inventory.slots[index])
+            local item = utils.deepCopy(invTracker.inventory.slots[index])
             if self:timeLeft() == 0 or utils.compareItems(item, self.fuelSlot) then 
                 robot.select(index)
                 local beforeSize = robot.count()

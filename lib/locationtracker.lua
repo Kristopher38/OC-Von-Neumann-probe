@@ -2,12 +2,17 @@ local HookModule = require("hookmodule")
 local component = require("component")
 local sides = require("sides")
 local vec3 = require("vec3")
-local nav = require("navigation")
-local robot = component.robot
+local robot
 
 local locTracker = HookModule()
 
 function locTracker:start()
+    if component.isAvailable("robot") then
+        robot = component.robot
+    else
+        error("This library requires to be run on a robot")
+    end
+
     robot.move = self:hook(robot.move, self.move)
     robot.turn = self:hook(robot.turn, self.turn)
 
@@ -45,19 +50,24 @@ function locTracker:stop()
 end
 
 function locTracker.move(side)
-    local result, reason = locTracker:callOriginal(locTracker.move, side)
+    local result, reason = locTracker:callOriginal(robot.move, side)
     if result then
-        local offsetVector = vec3(0, 0, 0)
-        if side == sides.forward then
-            offsetVector.x = 1
-        elseif side == sides.back then
-            offsetVector.x = -1
+        if side == sides.forward or side == sides.back then
+            local offset = side == sides.forward and 1 or -1
+            if locTracker.orientation == sides.posz then
+                locTracker.position.z = locTracker.position.z + offset
+            elseif locTracker.orientation == sides.negz then
+                locTracker.position.z = locTracker.position.z - offset
+            elseif locTracker.orientation == sides.posx then
+                locTracker.position.x = locTracker.position.x + offset
+            else
+                locTracker.position.x = locTracker.position.x - offset
+            end
         elseif side == sides.up then
-            offsetVector.y = 1
-        elseif side == sides.down then
-            offsetVector.y = -1
+            locTracker.position.y = locTracker.position.y + 1
+        else
+            locTracker.position.y = locTracker.position.y - 1
         end
-        locTracker.position = nav.coordsFromOffset(locTracker.position, offsetVector, locTracker.orientation)
     end
     return result, reason
 end
@@ -65,7 +75,7 @@ end
 local lookupClockwise = {[sides.north] = sides.east, [sides.east] = sides.south, [sides.south] = sides.west, [sides.west] = sides.north}
 local lookupAntiClockwise = {[sides.north] = sides.west, [sides.east] = sides.north, [sides.south] = sides.east, [sides.west] = sides.south}
 function locTracker.turn(clockwise)
-    local result = locTracker:callOriginal(locTracker.turn, clockwise)
+    local result = locTracker:callOriginal(robot.turn, clockwise)
     if result then
         locTracker.orientation = clockwise and lookupClockwise[locTracker.orientation] or lookupAntiClockwise[locTracker.orientation]
     end

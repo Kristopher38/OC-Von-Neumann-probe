@@ -1,4 +1,3 @@
-local robot = require("robot")
 local utils = require("utils")
 
 local Inventory = {}

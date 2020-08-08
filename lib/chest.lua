@@ -3,6 +3,7 @@ local Inventory = require("inventory")
 local nav = require("navigation")
 local robot = require("robot")
 local locTracker = require("locationtracker")
+local invTracker = require("inventorytracker")
 local component = require("component")
 local blacklistMap = require("blacklistmap")
 local utils = require("utils")
@@ -61,13 +62,13 @@ function Chest:put(itemOrIndex, amount)
         local itemIndex
         local targetIndex
         if type(itemOrIndex) == "table" then -- itemOrIndex is an item
-            itemIndex = robot.inventory:findIndex(itemOrIndex, 1)
+            itemIndex = invTracker.inventory:findIndex(itemOrIndex, 1)
             targetIndex = self:findIndex(itemOrIndex, 1, true)
-        elseif robot.inventory.slots[itemOrIndex] then -- itemOrIndex is valid index
+        elseif invTracker.inventory.slots[itemOrIndex] then -- itemOrIndex is valid index
             itemIndex = itemOrIndex
-            targetIndex = self:findIndex(robot.inventory.slots[itemOrIndex], 1, true)
+            targetIndex = self:findIndex(invTracker.inventory.slots[itemOrIndex], 1, true)
             -- when supplying index, take either maximum possible amount if amount > size, or specified amount if amount < size
-            amount = math.min(robot.inventory.slots[itemIndex].size, amount)
+            amount = math.min(invTracker.inventory.slots[itemIndex].size, amount)
         else
             -- if itemOrIndex is not an item and not a valid slot, break and return
             break
@@ -84,7 +85,7 @@ function Chest:put(itemOrIndex, amount)
 
             if deltaSize > 0 then
                 if self.slots[targetIndex] == nil then
-                    self.slots[targetIndex] = utils.deepCopy(robot.inventory.slots[itemIndex])
+                    self.slots[targetIndex] = utils.deepCopy(invTracker.inventory.slots[itemIndex])
                     self.slots[targetIndex].size = deltaSize
                 else
                     self.slots[targetIndex].size = self.slots[targetIndex].size + deltaSize
@@ -116,24 +117,24 @@ function Chest:take(itemOrIndex, amount)
         local targetIndex
         if type(itemOrIndex) == "table" then -- itemOrIndex is an item
             itemIndex = self:findIndex(itemOrIndex, 1)
-            targetIndex = robot.inventory:findIndex(itemOrIndex, 1, true)
+            targetIndex = invTracker.inventory:findIndex(itemOrIndex, 1, true)
         elseif self.slots[itemOrIndex] then -- itemOrIndex is a valid index
             itemIndex = itemOrIndex
-            targetIndex = robot.inventory:findIndex(self.slots[itemOrIndex], 1, true)
+            targetIndex = invTracker.inventory:findIndex(self.slots[itemOrIndex], 1, true)
             -- when supplying index, take either maximum possible amount if amount > size, or specified amount if amount < size
             amount = math.min(self.slots[itemIndex].size, amount)
         else
             -- if itemOrIndex is not an item and not a valid slot, break and return
             break
         end
-        targetIndex = targetIndex or robot.inventory:emptySlot()
+        targetIndex = targetIndex or invTracker.inventory:emptySlot()
 
         if itemIndex and targetIndex then
             local item = self.slots[itemIndex]
             robot.select(targetIndex)
-            local beforeSize = robot.inventory:count(item)
+            local beforeSize = invTracker.inventory:count(item)
             invcontroller.suckFromSlot(side, itemIndex, amount)
-            local deltaSize = robot.inventory:count(item) - beforeSize
+            local deltaSize = invTracker.inventory:count(item) - beforeSize
             amount = amount - deltaSize
             amountTransfered = amountTransfered + deltaSize
             
