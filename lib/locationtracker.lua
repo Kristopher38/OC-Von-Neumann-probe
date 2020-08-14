@@ -4,7 +4,7 @@ local sides = require("sides")
 local vec3 = require("vec3")
 local robot
 
-local locTracker = HookModule()
+local locTracker = HookModule("locationtracker")
 
 function locTracker:start()
     if component.isAvailable("robot") then
@@ -50,7 +50,7 @@ function locTracker:stop()
 end
 
 function locTracker.move(side)
-    local result, reason = locTracker:callOriginal(robot.move, side)
+    local result, reason = locTracker:callOriginal(locTracker.move, side)
     if result then
         if side == sides.forward or side == sides.back then
             local offset = side == sides.forward and 1 or -1
@@ -75,7 +75,7 @@ end
 local lookupClockwise = {[sides.north] = sides.east, [sides.east] = sides.south, [sides.south] = sides.west, [sides.west] = sides.north}
 local lookupAntiClockwise = {[sides.north] = sides.west, [sides.east] = sides.north, [sides.south] = sides.east, [sides.west] = sides.south}
 function locTracker.turn(clockwise)
-    local result = locTracker:callOriginal(robot.turn, clockwise)
+    local result = locTracker:callOriginal(locTracker.move, clockwise)
     if result then
         locTracker.orientation = clockwise and lookupClockwise[locTracker.orientation] or lookupAntiClockwise[locTracker.orientation]
     end

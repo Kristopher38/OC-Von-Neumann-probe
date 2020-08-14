@@ -9,7 +9,7 @@ local generator
 local crafting
 local tractorBeam
 
-local invTracker = HookModule()
+local invTracker = HookModule("inventorytracker")
 
 function invTracker:start()
     -- robot inventory init and methods override --
@@ -202,14 +202,14 @@ function invTracker.dropLogic(success, generatesEvent)
 end
 
 function invTracker.swing(side)
-    local success, reason = invTracker:callOriginal(robot.swing, side)
+    local success, reason = invTracker:callOriginal(invTracker.swing, side)
     invTracker.suckLogic(success, true)
     return success, reason
 end
 
 function invTracker.use(side, sneaky, duration)
     -- use doesn't cause inventory_changed event to fire even when stack is entirely spent
-    local success, interaction = invTracker:callOriginal(robot.use, side, sneaky, duration)
+    local success, interaction = invTracker:callOriginal(invTracker.use, side, sneaky, duration)
 
     if success then
         if interaction == "item_placed" then
@@ -222,7 +222,7 @@ end
 
 function invTracker.place(side, sneaky)
     -- place doesn't cause inventory_changed event to fire even when stack is entirely spent
-    local success, reason = invTracker:callOriginal(robot.place, side, sneaky)
+    local success, reason = invTracker:callOriginal(invTracker.place, side, sneaky)
 
     if success then
         invTracker.inventory:deductFromSlot(invTracker.inventory.selectedSlot, 1)
@@ -232,7 +232,7 @@ function invTracker.place(side, sneaky)
 end
 
 function invTracker.select(slot)
-    local selected = invTracker:callOriginal(robot.select, slot)
+    local selected = invTracker:callOriginal(invTracker.select, slot)
     invTracker.inventory.selectedSlot = selected
     return selected
 end
@@ -254,7 +254,7 @@ function invTracker.transferTo(toSlot, amount)
                 end
 
                 if areStackable then
-                    local success = invTracker:callOriginal(robot.transferTo, toSlot, amount)
+                    local success = invTracker:callOriginal(invTracker.transferTo, toSlot, amount)
                     --[[ if success is true that means the items are stackable --]]
                     if success then
                         local newSlotSize = robot.count(toSlot)
@@ -267,7 +267,7 @@ function invTracker.transferTo(toSlot, amount)
                 end
             end
             -- if items are different or are identical but not stackable we swap them
-            local success = invTracker:callOriginal(robot.transferTo, toSlot, amount)
+            local success = invTracker:callOriginal(invTracker.transferTo, toSlot, amount)
             if success then
                 local temp = utils.deepCopy(invTracker.inventory.slots[selectedSlot])
                 invTracker.inventory.slots[selectedSlot] = invTracker.inventory.slots[toSlot]
@@ -278,7 +278,7 @@ function invTracker.transferTo(toSlot, amount)
             return success
         else
             -- if slot at toSlot is empty, then just clone a table and set the size
-            local success = invTracker:callOriginal(robot.transferTo, toSlot, amount)
+            local success = invTracker:callOriginal(invTracker.transferTo, toSlot, amount)
             if success then
                 local newSlotSize = robot.count(toSlot)
                 invTracker.inventory.slots[toSlot] = utils.deepCopy(invTracker.inventory.slots[selectedSlot])
@@ -297,20 +297,20 @@ function invTracker.transferTo(toSlot, amount)
 end
 
 function invTracker.drop(side, amount)
-    local success, reason = invTracker:callOriginal(robot.drop, side, amount)
+    local success, reason = invTracker:callOriginal(invTracker.drop, side, amount)
     invTracker.dropLogic(success, true)
     return success, reason
 end
 
 function invTracker.suck(side, amount)
-    local itemsSucked = invTracker:callOriginal(robot.suck, side, amount)
+    local itemsSucked = invTracker:callOriginal(invTracker.suck, side, amount)
     invTracker.suckLogic(itemsSucked, false)
     return itemsSucked
 end
 
 function invTracker.equip()
     local selectedSlot = invTracker.inventory.selectedSlot
-    local success = invTracker:callOriginal(invcontroller.equip)
+    local success = invTracker:callOriginal(invTracker.equip)
 
     if success then
         -- update fully in case player changed the tool since last update
@@ -330,20 +330,20 @@ function invTracker.equip()
 end
 
 function invTracker.dropIntoSlot(side, slot, amount)
-    local success, reason = invTracker:callOriginal(invcontroller.dropIntoSlot, side, slot, amount)
+    local success, reason = invTracker:callOriginal(invTracker.dropIntoSlot, side, slot, amount)
     -- doesn't generate inventory_changed event
     invTracker.dropLogic(success, false)
     return success, reason
 end
 
 function invTracker.suckFromSlot(side, slot, amount)
-    local itemsSucked = invTracker:callOriginal(invcontroller.suckFromSlot, side, slot, amount)
+    local itemsSucked = invTracker:callOriginal(invTracker.suckFromSlot, side, slot, amount)
     invTracker.suckLogic(itemsSucked, false)
     return itemsSucked
 end
 
 function invTracker.generatorInsert(amount)
-    local success, reason = invTracker:callOriginal(generator.insert, amount)
+    local success, reason = invTracker:callOriginal(invTracker.generatorInsert, amount)
     -- generator.insert works similarly to inventory_controller.dropIntoSlot (doesn't generate inventory_changed event when slot is spent) 
     invTracker.dropLogic(success, false)
     return success, reason
@@ -351,14 +351,14 @@ end
 
 function invTracker.generatorRemove(amount)
     -- generator.remove works similarly to robot.suck
-    local success = invTracker:callOriginal(generator.remove, amount)
+    local success = invTracker:callOriginal(invTracker.generatorRemove, amount)
     invTracker.suckLogic(success, false)
     return success
 end
 
 function invTracker.craft(amount, singleCraftAmount)
     singleCraftAmount = singleCraftAmount or 1
-    local success = invTracker:callOriginal(crafting.craft, amount)
+    local success = invTracker:callOriginal(invTracker.craft, amount)
     -- important: run invTracker.suckLogic first
     local suckedToSlots = invTracker.suckLogic(success, true, singleCraftAmount, true)
     -- then update the crafting area
@@ -376,7 +376,7 @@ function invTracker.craft(amount, singleCraftAmount)
 end
 
 function invTracker.tractorBeamSuck()
-    local success = invTracker:callOriginal(tractorBeam.suck)
+    local success = invTracker:callOriginal(invTracker.tractorBeamSuck)
     invTracker.suckLogic(success, false)
     return success
 end

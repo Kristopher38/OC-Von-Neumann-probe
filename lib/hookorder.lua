@@ -1,0 +1,4 @@
+local order = {
+    "locationtracker",
+    "inventorytracker"
+}
