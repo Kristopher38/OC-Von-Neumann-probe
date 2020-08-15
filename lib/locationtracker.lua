@@ -75,7 +75,7 @@ end
 local lookupClockwise = {[sides.north] = sides.east, [sides.east] = sides.south, [sides.south] = sides.west, [sides.west] = sides.north}
 local lookupAntiClockwise = {[sides.north] = sides.west, [sides.east] = sides.north, [sides.south] = sides.east, [sides.west] = sides.south}
 function locTracker.turn(clockwise)
-    local result = locTracker:callOriginal(locTracker.move, clockwise)
+    local result = locTracker:callOriginal(locTracker.turn, clockwise)
     if result then
         locTracker.orientation = clockwise and lookupClockwise[locTracker.orientation] or lookupAntiClockwise[locTracker.orientation]
     end
