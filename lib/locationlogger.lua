@@ -7,6 +7,7 @@ local logging = require("logging")
 local log = logging:getLogger("location")
 log:setLevel(logging.DEBUG)
 log:addHandler(handlers.HttpHandler(logging.DEBUG, "http://93.181.131.201:8080"))
+log:addHandler(handlers.BroadcastHandler(logging.DEBUG, 108))
 
 local locLogger = HookModule("locationlogger")
 

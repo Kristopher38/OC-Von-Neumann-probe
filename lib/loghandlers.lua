@@ -5,6 +5,10 @@ local internet
 if component.isAvailable("internet") then
     internet = component.internet
 end
+local modem
+if component.isAvailable("modem") then
+    modem = component.modem
+end
 
 ---------- Handler class and builtin handlers ----------
 
@@ -39,6 +43,19 @@ handlers.HttpHandler = utils.makeClass(function(level, address)
         return self
     else
         error("HTTP handler requires an internet card to run")
+    end
+end, handlers.Handler)
+
+handlers.BroadcastHandler = utils.makeClass(function(level, port)
+    if modem then
+        local self = handlers.Handler(level, function(self, level, msg)
+            if level >= self.level then
+                modem.broadcast(port, msg)
+            end
+        end)
+        return self
+    else
+        error("Broadcast handler requires a network card to run")
     end
 end, handlers.Handler)
 

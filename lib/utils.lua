@@ -156,7 +156,9 @@ function utils.makeClass(constructor, parentClass)
     setmetatable(class, {
         __index = parentClass,
         __call = function(cls, ...)
+            assert(type(constructor) == "function", "Class constructor has to be a function")
             local self = constructor(...)
+            assert(type(self) == "table", "Class constructor has to return a table")
             setmetatable(self, cls)
             return self
         end
