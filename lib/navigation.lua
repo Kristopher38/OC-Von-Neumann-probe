@@ -483,8 +483,8 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 	return optimizedTour, bestDistance
 end
 
-function navigation.shortestTour(nodes, startNode, endNode)
-	return navigation.tspTwoOpt(navigation.tspGreedy(nodes), startNode, endNode)
+function navigation.shortestTour(nodes, startNode, endNode, heuristic)
+	return navigation.tspTwoOpt(navigation.tspGreedy(nodes, nil, nil, heuristic), startNode, endNode, heuristic)
 end
 
 -- finds nearest block to fromNode in a VectorMap or table of vectors

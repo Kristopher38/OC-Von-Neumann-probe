@@ -16,8 +16,27 @@ function locTracker:start()
     robot.move = self:hook(robot.move, self.move)
     robot.turn = self:hook(robot.turn, self.turn)
 
+    local success
+    local users
     if component.isAvailable("glasses") then
-        component.glasses.startLinking(username)
+        success, users = component.glasses.startLinking()
+    end
+
+    if success then
+        if #users == 0 then
+            local connectedUsers = component.glasses.getConnectedPlayers()
+            for i = 1, #connectedUsers do
+                users[i] = connectedUsers[i][1]
+            end
+        end
+
+        local username
+        if #users == 1 then
+            username = users[1]
+        else
+            io.stdout:write("\nPlease enter your username: ")
+            username = io.stdin:read()
+        end
         local lookingAt = component.glasses.getUserLookingAt(username)
         local orientationString
         while sides[orientationString] == nil do
@@ -27,7 +46,7 @@ function locTracker:start()
 
         locTracker.position = vec3(lookingAt.x, lookingAt.y, lookingAt.z)
         locTracker.orientation = sides[orientationString]
-    else
+    else -- glasses not available or couldn't link with glasses
         local location
         while location == nil or sides[location[4]] == nil do
             io.stdout:write("\nPlease enter robot's coordinates and orientation in the following format: <x> <y> <z> <facing: east|west|north|south>: ")
