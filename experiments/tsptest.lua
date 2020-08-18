@@ -3,7 +3,6 @@ package.loaded.navigation = nil
 package.loaded.utils = nil
 local nav = require("navigation")
 local vec3 = require("vec3")
-local debug = require("debug")
 local ScanBatch = require("scanbatch")
 local blockType = require("blocktype")
 local inspect = require("inspect")
@@ -13,11 +12,17 @@ local robot = require("robot")
 local VectorMap = require("vectormap")
 local autoyielder = require("autoyielder")
 
-debug.init()
-debug.clearWidgets()
+local draw = false
+local debug
+if draw then
+    debug = require("debug")
+    debug.init()
+    debug.clearWidgets()
+end
+--math.randomseed(0)
 
 local ores = {}
-local numores = 120
+local numores = 80
 for i = 1, numores do
     table.insert(ores, vec3(math.random(55, 95), 73, math.random(800, 840)))
 end 
@@ -39,20 +44,28 @@ end
 print("start: ", maxDistNodeA)
 print("end: ", maxDistNodeB)
 
-local tsppath = utils.timeIt(nav.shortestTour, ores, maxDistNodeA, maxDistNodeB, nav.heuristicEuclidean)
---tsppath = utils.timeIt(nav.tspTwoOpt, tsppath, vec3(58, 70, 813), vec3(83, 72, 812))
---print("best distance: ", bestdist)
+local tsppath, bestdist = table.unpack((utils.timeIt(nav.tspTwoOpt, nav.tspGreedy(ores, nil, nil, nav.heuristicEuclidean), maxDistNodeA, maxDistNodeB, nav.heuristicEuclidean)))
+print("best distance new: ", bestdist)
 
-debug.drawText(tsppath[1], 1, debug.color.green, 1)
-for i = 2, #tsppath - 1 do
-    debug.drawText(tsppath[i], tostring(i), debug.color.darkRed, 1)
-    autoyielder.yield()
-end
-debug.drawText(tsppath[#tsppath], #tsppath, debug.color.green, 1)
+local tsppathOld, bestdistOld = table.unpack((utils.timeIt(nav.tspTwoOptOld, nav.tspGreedy(ores, nil, nil, nav.heuristicEuclidean), maxDistNodeA, maxDistNodeB, nav.heuristicEuclidean)))
+print("best distance old: ", bestdistOld)
 
-for i = 2, #tsppath do
-    debug.drawLineShape(tsppath[i-1], tsppath[i])
-    autoyielder.yield()
+--[[ for i = 1, #tsppath do
+    assert(tsppath[i] == tsppathOld[i])
+end ]]
+
+if draw then
+    debug.drawText(tsppath[1], 1, debug.color.green, 1)
+    for i = 2, #tsppath - 1 do
+        debug.drawText(tsppath[i], tostring(i), debug.color.darkRed, 1)
+        autoyielder.yield()
+    end
+    debug.drawText(tsppath[#tsppath], #tsppath, debug.color.green, 1)
+
+    for i = 2, #tsppath do
+        debug.drawLineShape(tsppath[i-1], tsppath[i])
+        autoyielder.yield()
+    end
 end
 
 if maxDistNodeA ~= tsppath[1] then
@@ -61,7 +74,4 @@ end
 if maxDistNodeB ~= tsppath[#tsppath] then
     print("Second nodes not equal")
 end
-
---debug.drawLineShape(tsppath[1], tsppath[#tsppath])
---debug.commit()
 

@@ -57,7 +57,7 @@ function utils.timeIt(doPrint, func, ...)
 		func = doPrint
 	end
 	local realBefore, cpuBefore = computer.uptime(), os.clock()
-	local returnVal = func(table.unpack(args))
+	local returnVals = table.pack(func(table.unpack(args)))
 	local realAfter, cpuAfter = computer.uptime(), os.clock()
 
 	local realDiff = realAfter - realBefore
@@ -68,7 +68,7 @@ function utils.timeIt(doPrint, func, ...)
 		print(string.format('cpu %5dm%.3fs', math.floor(cpuDiff/60), cpuDiff%60))
 	end
 
-	return returnVal, realDiff, cpuDiff
+	return returnVals, realDiff, cpuDiff
 end
 
 --[[ measures how much energy execution of a function took, returns

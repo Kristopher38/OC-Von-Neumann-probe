@@ -424,7 +424,7 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 
 	local twoOptExchange = function(tour, _i, _k)
 		local newTour = {}
-		for i = 0, _i - 1 do
+		for i = 1, _i - 1 do
 			table.insert(newTour, tour[i])
 		end
 		for i = _k, _i, -1 do
@@ -463,25 +463,104 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 		table.insert(optimizedTour, endNode)
 	end
 	
-	local bestDistance = heuristicCost(optimizedTour)
+    local bestDistance = heuristicCost(optimizedTour)
 	--[[ process the table, skipping first and last node if we're not looping the tour
-	to keep them as first and last --]]
-	::startAgain::
-	for i = 2, #optimizedTour - (loopTour and 1 or 2) do
-		for k = i, #optimizedTour - (loopTour and 0 or 1) do
+    to keep them as first and last --]]
+
+    ::startAgain::
+    for i = 2, #optimizedTour - (loopTour and 1 or 2) do
+        for j = i + 1, #optimizedTour - (loopTour and 0 or 1) do
             autoyielder.yield()
-            local newTour = twoOptExchange(optimizedTour, i, k)
-			local newDistance = heuristicCost(newTour)
-			if newDistance < bestDistance then
-				bestDistance = newDistance
-				optimizedTour = newTour
-				goto startAgain
-			end
-		end
-	end
+            local distBefore = heuristic(optimizedTour[i], optimizedTour[i - 1]) + heuristic(optimizedTour[j], optimizedTour[j + 1])
+            local distAfter = heuristic(optimizedTour[i], optimizedTour[j + 1]) + heuristic(optimizedTour[i - 1], optimizedTour[j])
+            local newDistance = bestDistance - distBefore + distAfter
+            if newDistance < bestDistance then
+                -- reverse order of part of the tour in-place
+                -- go from i to pivot point (middle element of part of the table)
+                for k = i, (i + j) // 2 do
+                    local tmp = optimizedTour[k]
+                    -- mirror index = mirrored index on the other side of the pivot point
+                    local mirrorIndex = j - k + i
+                    optimizedTour[k] = optimizedTour[mirrorIndex]
+                    optimizedTour[mirrorIndex] = tmp
+                end
+                bestDistance = newDistance
+                goto startAgain
+            end
+        end
+    end
 
 	return optimizedTour, bestDistance
 end
+
+function navigation.tspTwoOptOld(tour, startNode, endNode, heuristic)
+	assert(tour and #tour > 0, "No nodes supplied to arrange in a tour")
+	heuristic = heuristic or navigation.heuristicManhattan
+	local loopTour = startNode == nil or endNode == nil
+	local optimizedTour = utils.deepCopy(tour)
+
+	local twoOptExchange = function(tour, _i, _k)
+		local newTour = {}
+		for i = 1, _i - 1 do
+			table.insert(newTour, tour[i])
+		end
+		for i = _k, _i, -1 do
+			table.insert(newTour, tour[i])
+		end
+		for i = _k + 1, #tour do
+			table.insert(newTour, tour[i])
+		end
+		return newTour
+	end
+	local heuristicCost = function(tour, i, k)
+		local totalCost = 0
+		for i = 1, #tour - 1 do
+			totalCost = totalCost + heuristic(tour[i], tour[i+1])
+		end
+
+		if loopTour then
+			totalCost = totalCost + heuristic(tour[1], tour[#tour])
+		end
+		return totalCost
+	end
+
+	--[[ put start node and end node at the start and end of the table respectively if
+	we aren't making a looped tour --]]
+	if not loopTour then
+		-- if start and end nodes already exist in the tour, remove them
+		local startNodeIndex = utils.findIndex(optimizedTour, startNode)
+		if startNodeIndex then
+			table.remove(optimizedTour, startNodeIndex)
+		end
+		local endNodeIndex = utils.findIndex(optimizedTour, endNode)
+		if endNodeIndex then
+			table.remove(optimizedTour, endNodeIndex)
+		end
+		table.insert(optimizedTour, 1, startNode)
+		table.insert(optimizedTour, endNode)
+	end
+	
+	local bestDistance = heuristicCost(optimizedTour)
+	--[[ process the table, skipping first and last node if we're not looping the tour
+	to keep them as first and last --]]
+
+    ::startAgain::
+    for i = 2, #optimizedTour - (loopTour and 1 or 2) do
+        for k = i + 1, #optimizedTour - (loopTour and 0 or 1) do
+            autoyielder.yield()
+            local newTour = twoOptExchange(optimizedTour, i, k)
+            local newDistance = heuristicCost(newTour)
+            if newDistance < bestDistance then
+                bestDistance = newDistance
+                optimizedTour = newTour
+                goto startAgain
+            end
+        end
+    end
+
+    return optimizedTour, bestDistance
+end
+    
 
 function navigation.shortestTour(nodes, startNode, endNode, heuristic)
 	return navigation.tspTwoOpt(navigation.tspGreedy(nodes, nil, nil, heuristic), startNode, endNode, heuristic)
