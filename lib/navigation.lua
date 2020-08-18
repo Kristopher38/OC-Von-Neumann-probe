@@ -422,31 +422,6 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 	local loopTour = startNode == nil or endNode == nil
 	local optimizedTour = utils.deepCopy(tour)
 
-	local twoOptExchange = function(tour, _i, _k)
-		local newTour = {}
-		for i = 1, _i - 1 do
-			table.insert(newTour, tour[i])
-		end
-		for i = _k, _i, -1 do
-			table.insert(newTour, tour[i])
-		end
-		for i = _k + 1, #tour do
-			table.insert(newTour, tour[i])
-		end
-		return newTour
-	end
-	local heuristicCost = function(tour)
-		local totalCost = 0
-		for i = 1, #tour - 1 do
-			totalCost = totalCost + heuristic(tour[i], tour[i+1])
-		end
-
-		if loopTour then
-			totalCost = totalCost + heuristic(tour[1], tour[#tour])
-		end
-		return totalCost
-	end
-
 	--[[ put start node and end node at the start and end of the table respectively if
 	we aren't making a looped tour --]]
 	if not loopTour then
@@ -462,8 +437,15 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
 		table.insert(optimizedTour, 1, startNode)
 		table.insert(optimizedTour, endNode)
 	end
-	
-    local bestDistance = heuristicCost(optimizedTour)
+    
+    -- calculate initial tour distance
+    local bestDistance = 0
+    for i = 1, #optimizedTour - 1 do
+        bestDistance = bestDistance + heuristic(optimizedTour[i], optimizedTour[i+1])
+    end
+    if loopTour then
+        bestDistance = bestDistance + heuristic(optimizedTour[1], optimizedTour[#optimizedTour])
+    end
 	--[[ process the table, skipping first and last node if we're not looping the tour
     to keep them as first and last --]]
 
@@ -473,6 +455,7 @@ function navigation.tspTwoOpt(tour, startNode, endNode, heuristic)
             autoyielder.yield()
             local distBefore = heuristic(optimizedTour[i], optimizedTour[i - 1]) + heuristic(optimizedTour[j], optimizedTour[j + 1])
             local distAfter = heuristic(optimizedTour[i], optimizedTour[j + 1]) + heuristic(optimizedTour[i - 1], optimizedTour[j])
+            -- new distance = current distance - distance between two currently considered node pairs + distance after swapping connections of those pairs
             local newDistance = bestDistance - distBefore + distAfter
             if newDistance < bestDistance then
                 -- reverse order of part of the tour in-place
