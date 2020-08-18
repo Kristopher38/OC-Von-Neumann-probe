@@ -403,7 +403,6 @@ function navigation.tspGreedy(initialTour, startNode, endNode, heuristic)
 		totalCost = totalCost + heuristicCost(optimizedTour[1], optimizedTour[#optimizedTour])
 	else
 		local dummyIndex = utils.findIndex(optimizedTour, dummyNode)
-		print(dummyIndex)
 		local finalTour = {}
 		for i = dummyIndex - 1, 1, -1 do
 			table.insert(finalTour, optimizedTour[i])
