@@ -56,6 +56,53 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [ ] Come up with a protocol for efficient (energy-wise) communication between the devices
   - [ ] Write software for the computer which would receive signals from the robot to install new robot's software on the hard drive and start the assembler
 
+## Rough algorithm
+### Primary goal
+1. Searching for a biome with trees and harvesting resources
+    - at least 41 logs
+    - a few saplings for a tree farm
+    - a few extra logs to make new tools
+2. Mining enough resources
+    - coal
+    - redstone
+    - gold
+    - iron
+    - diamonds
+    - cobblestone
+    - (optional) emeralds
+3. Smelting ores to ingots and crafting 2 buckets
+4. Finding lava (in existing visited chunk's data) and getting 2 lava buckets
+5. Searching for a river and harvesting resources from it
+    - clay
+    - sugar cane
+    - sand
+    - obsidian (made with buckets of lava)
+    - 2 buckets of water
+6. Setting up sugarcane farm
+    - making infinite water supply
+    - making checkerboard pattern
+    - planting sugarcane, in the final stage at least 31 blocks
+7. Searching for specific biomes and harvesting resources
+    - desert: min. 15 cacti
+    - village: emeralds, eyes of ender
+8. Robot assembly
+    - crafting parts
+    - writing software to disk
+    - putting parts in the assembler and starting the assembly
+    - placing the robot, turning it on, configuring it, providing it with starting renewable resources (water, cacti, sugar canes, mining equipment) and data about locations of various biomes and villages 
+### Secondary goal
+1. Making a tree farm
+2. Making a cactus farm
+3. Moving bases when resources in the near area are spent
+
+### Interruptions
+Interruptions are events that happen (usually asynchronously or during execution of code which shouldn't handle them explicitly for clarity reasons) during execution of specific task, e.g. mining, which either have to be dealt with immmediately or can be scheduled to be done later. Those include:
+- going below some energy threshold - immediate response
+- going low on generator fuel - immediate response
+- fully filling up robot's internal inventory - immediate response
+- furnace smelting job has finished - postponed response
+- crops have grown/need check if grown - postponed response
+
 ## Technical details about random aspects
 ### Robot design\*
 ![Robot design](https://github.com/Kristopher38/OC-Von-Neumann-probe/blob/master/docs/robot.png?raw=true)
