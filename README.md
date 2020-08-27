@@ -30,8 +30,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
     - [ ] Desert/cactus
     - [ ] River/sugar cane
     - [ ] River/clay
-    - [ ] River/gravel (flint)
-    - [ ] Mountains/emerald
+    - [ ] (optional) Mountains/emerald
     - [ ] Village/eye of ender (for geolyzer and chunkloader upgrades)
   - [ ] Villager trading
     - [ ] Getting to the desired trade level with a cleric to get eyes of ender trade
@@ -54,8 +53,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [ ] Estimating how much time will it take for the crops to grow
   - [ ] Checking when the it's near the estimated time, the robot is near and on the surface
 - [ ] Communication between the robot and computer at the home base
-  - [ ] Describe a protocol for efficient (energy-wise) communication between the devices
-  - [ ] Implement the protocol using functions only available on the EEPROM to make sharing code between the devices easier
+  - [ ] Come up with a protocol for efficient (energy-wise) communication between the devices
   - [ ] Write software for the computer which would receive signals from the robot to install new robot's software on the hard drive and start the assembler
 
 ## Technical details about random aspects
@@ -64,7 +62,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
 
 \*Additional inventory upgrades go into the upgrade containers, design subject to change
 
-\*Wireless network card is tier 1 because it doesn't require ender pearls to craft and those are hard to get
+\*Wireless network card is tier 1 because it doesn't require ender pearls to craft and those are impossible to get without player presence
 
 ### Summarized material list
 Quantity | Material | Method of acquisition
