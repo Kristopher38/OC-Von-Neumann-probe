@@ -115,12 +115,12 @@ Interruptions are events that happen (usually asynchronously or during execution
 Quantity | Material | Method of acquisition
 -------- | -------- | ---------------------
 3 | Eye of Ender | Trading in villages (need to find a village)
-15 | Cactus | Harvesting in the desert (need to find a desert)
-34 | Coal | Mining (for smelting ores and other items)
-60 | Clay (item) | Harvesting from the river (need to find a river)
+2 | Cactus | Harvesting in the desert (need to find a desert)
+32 | Coal | Mining (for smelting ores and other items)
+2 | Clay (block) | Harvesting from the river (need to find a river)
 138 | Redstone | Mining
 45 | Sugar Canes | Harvesting from the river (need to find a river)
-52 | Gold Ingot | Mining
+39 | Gold Ingot | Mining
 198 | Iron Ingot | Mining
 20 | Diamond | Mining
 82 | Cobblestone | Mining
