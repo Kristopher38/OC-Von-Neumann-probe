@@ -11,7 +11,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [x] Pathfinding with A*
   - [ ] Safe movement: make sure robot can always reach the desired destination, even if there are obstacles (falling gravel/sand, entities) along the way or the destination is in the air (algorithm for movement without any hover upgrade)
   - [ ] Efficient pathfinding with Jump Point Search on unweighted grid, with chunk scanning before moving into them
-  - [ ] Keeping track of experience which affects robot's movement, turn and block breaking speed stats for calculating pathfinding cost and heuristic
+  - [ ] Keeping track of experience which affects robot's block breaking speed for calculating pathfinding cost and heuristic
   - [ ] Keeping track of tool damage and recrafting it if broken
   - [ ] Recognizing specific structures from map data
   - [ ] Keeping track of robot's energy level, fuel left and going to the charging location if energy is low enough and fuel spent
