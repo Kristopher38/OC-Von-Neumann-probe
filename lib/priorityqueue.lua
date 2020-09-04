@@ -42,8 +42,19 @@ function PriorityQueue:pop()
 	return minNode
 end
 
--- puts an element into the queue with specified priority
+-- puts an element into the queue with specified priority, or if priority is not specified, at the end of the queue
 function PriorityQueue:put(_element, _priority)
+    -- if priority not specified, search for maximum element
+    if not _priority then
+        local max = math.mininteger
+        -- only need to iterate over upper half of the elements because non-leaf node can't be the largest element
+        for i = #self.heap // 2, #self.heap do
+            if max < self.heap[i] then
+                max = self.heap[i]
+            end
+        end
+        _priority = math.mininteger + 1
+    end
 	local heapNode = {element = _element, priority = _priority}
 	self.heap[self.endIndex] = heapNode -- insert new node at the end of the heap
 	local childIndex = self.endIndex
