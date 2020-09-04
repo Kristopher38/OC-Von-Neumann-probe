@@ -102,7 +102,7 @@ end
 by default, which means - on which side of the robot it is), either specifying
 the block coordinates or it's orientation (toNodeOrOrientation) as from
 calcOrientation (used for smart turning) --]]
-function navigation.relativeOrientation(fromNode, toNodeOrOrientation, fromOrientation)
+function navigation.relativeSide(fromNode, toNodeOrOrientation, fromOrientation)
 	local toNode
 	local toOrientation
 	if utils.isInstance(toNodeOrOrientation, vec3) then
@@ -572,12 +572,12 @@ function navigation.faceBlock(nodeOrDirection)
 	if locTracker.orientation ~= nodeOrDirection then
 		--[[ returns block's relative orientation based either on the node to which we should turn towards or the
 		direction the node is facing as returned from calcOrientation --]]
-		local relativeOrientation = navigation.relativeOrientation(locTracker.position, nodeOrDirection, locTracker.orientation)
-		if relativeOrientation == sides.left then
+		local relativeSide = navigation.relativeSide(locTracker.position, nodeOrDirection, locTracker.orientation)
+		if relativeSide == sides.left then
 			robot.turnLeft()
-		elseif relativeOrientation == sides.right then
+		elseif relativeSide == sides.right then
 			robot.turnRight()
-		elseif relativeOrientation == sides.back then
+		elseif relativeSide == sides.back then
 			robot.turnAround()
 		end
 	end

@@ -114,7 +114,7 @@ function mining.mineOreLump(oreSide)
             -- goes to the nearest ore block
             local nearestOre = nav.goTo(oreLocations, true)
             log:debug("Mining nearest ore at %s", nearestOre)
-            robotComponent.swing(nav.relativeOrientation(locTracker.position, nearestOre))
+            robotComponent.swing(nav.relativeSide(locTracker.position, nearestOre))
             nearestOreLump[nearestOre] = nil
         end
     end
@@ -158,7 +158,7 @@ function mining.mineChunk()
             if #oreVectors > 0 then
                 local nearestOre = nav.goTo(oreVectors, true)
                 log:debug("Went to the nearest ore (of ore lump on route): %s", nearestOre)
-                mining.mineOreLump(nav.relativeOrientation(locTracker.position, nearestOre))
+                mining.mineOreLump(nav.relativeSide(locTracker.position, nearestOre))
             end
         end
     end

@@ -150,11 +150,33 @@ function utils.shallowCompare(obj1, obj2, ignoreKeys)
 	return true
 end
 
-function utils.makeClass(constructor, parentClass)
+function utils.merge(t, ...)
+    local tables = table.pack(...)
+    for i = 1, #tables do
+        for k, v in pairs(tables[i]) do
+            if type(v) == "table" and type(t[k]) == "table" then
+                utils.merge(t[k], v)
+            else
+                t[k] = _v
+            end
+        end
+    end
+    return t
+end
+
+function utils.makeClass(constructor, ...) -- ... is a list of parent classes
     local class = {}
+    local parents = table.pack(...)
     class.__index = class
     setmetatable(class, {
-        __index = parentClass,
+        __index = #parents == 1 and parents[1] or function(cls, k)
+            for i = 1, #parents do
+                local v = parents[i][k]
+                if v then
+                    return v
+                end
+            end
+        end,
         __call = function(cls, ...)
             assert(type(constructor) == "function", "Class constructor has to be a function")
             local self = constructor(...)
@@ -168,15 +190,9 @@ end
 
 --[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
 function utils.compareItems(first, second)
-    local haveName = first.name and second.name
-    local haveLabel = first.label and second.label
-    if haveName and haveLabel then
-        return first.name == second.name and first.label == second.label
-    elseif haveName then
-        return first.name == second.name
-    elseif haveLabel then
-        return first.label == second.label
-    end
+    return ((first.name and second.name) and first.name == second.name or true) and
+           ((first.label and second.label) and first.label == second.label or true) and
+           ((first.damage and second.damage) and first.damage == second.damage or true)
 end
 
 function utils.realTime()

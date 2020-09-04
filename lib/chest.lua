@@ -8,42 +8,28 @@ local component = require("component")
 local blacklistMap = require("blacklistmap")
 local utils = require("utils")
 local vec3 = require("vec3")
+local Block = require("block")
 local invcontroller = component.inventory_controller
 
-local Chest = {}
-Chest.__index = Chest
-setmetatable(Chest, {__index = Inventory, __call = function(cls, positions, size)
-    positions = utils.isInstance(positions, vec3) and {positions} or positions -- where the chest blocks are located in the world (this allows for multiblock storage)
-    local self = Inventory(size or #positions * 27) -- amount of slots which the chest has defaults to 27 * number of blocks (standard minecraft chest)
-    self.positions = positions
+local Chest = utils.makeClass(function(positions, size)
+    -- amount of slots which the chest has defaults to 27 * number of blocks (standard minecraft chest)
+    size = size or (utils.isInstance(positions, vec3) and 27 or #positions * 27
+    local self = utils.merge(Inventory(size), Block(positions)))
     -- automatically add chest positions to blacklist
-    for i = 1, #positions do
-        blacklistMap[positions[i]] = true
-    end
-	setmetatable(self, cls)
+    self:denyBreaking()
 	return self
-end })
-
---[[ navigates to the chest position --]]
-function Chest:goTo()
-    nav.goTo(self.positions, true)
-end
-
---[[ returns on which side of the robot the chest is --]]
-function Chest:relativeOrientation()
-    local adjacentBlock = nav.adjacentBlock(locTracker.position, self.positions)
-    assert(adjacentBlock, "Robot is not adjacent to the chest")
-    return nav.relativeOrientation(locTracker.position, adjacentBlock)
-end
+end, Inventory, Block)
 
 --[[ fully refreshes the internal in-memory cache of chest size and contents ]]
 function Chest:refresh()
-    local side = self:relativeOrientation()
-    self.size = invcontroller.getInventorySize(side)
-
-    for i = 1, self.size do
-        self.slots[i] = invcontroller.getStackInSlot(side, i)
+    local i = 0
+    for item in invcontroller.getAllStacks(self:relativeSide()) do
+        i = i + 1
+        if next(item) ~= nil then
+            self.slots[i] = item
+        end
     end
+    self.size = i
 end
 
 --[[ Puts items in the chest, provided that the robot is adjacent to it, specifying either slot index
@@ -57,7 +43,6 @@ defaults to 1. Returns the amount of items transfered ]]
 function Chest:put(itemOrIndex, amount)
     amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
     local amountTransfered = 0
-    local side = self:relativeOrientation()
     while amount > 0 do
         local itemIndex
         local targetIndex
@@ -78,7 +63,7 @@ function Chest:put(itemOrIndex, amount)
         if itemIndex and targetIndex then
             robot.select(itemIndex)
             local beforeSize = robot.count()
-            invcontroller.dropIntoSlot(side, targetIndex, amount)
+            invcontroller.dropIntoSlot(self:relativeSide(), targetIndex, amount)
             local deltaSize = beforeSize - robot.count()
             amount = amount - deltaSize
             amountTransfered = amountTransfered + deltaSize
@@ -111,7 +96,6 @@ defaults to 1. Returns the amount of items transfered ]]
 function Chest:take(itemOrIndex, amount)
     amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
     local amountTransfered = 0
-    local side = self:relativeOrientation()
     while amount > 0 do
         local itemIndex
         local targetIndex
@@ -133,7 +117,7 @@ function Chest:take(itemOrIndex, amount)
             local item = self.slots[itemIndex]
             robot.select(targetIndex)
             local beforeSize = invTracker.inventory:count(item)
-            invcontroller.suckFromSlot(side, itemIndex, amount)
+            invcontroller.suckFromSlot(self:relativeSide(), itemIndex, amount)
             local deltaSize = invTracker.inventory:count(item) - beforeSize
             amount = amount - deltaSize
             amountTransfered = amountTransfered + deltaSize

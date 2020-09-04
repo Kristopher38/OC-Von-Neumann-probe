@@ -1,14 +1,12 @@
 local utils = require("utils")
 
-local Inventory = {}
-Inventory.__index = Inventory
-setmetatable(Inventory, {__call = function(cls, size)
+local Inventory = utils.makeClass(function(size)
 	local self = {}
     self.size = size or 27 -- amount of slots which the inventory has, defaults to 27 (standard minecraft chest)
     self.slots = {} -- table with item tables at each integer slot
-	setmetatable(self, cls)
+
 	return self
-end })
+end)
 
 --[[ finds the first occurrence of a specified item in the inventory, returns the index at which the item was found --]]
 function Inventory:findIndex(item, minAmount, notFull)
@@ -33,8 +31,8 @@ function Inventory:count(item)
 end
 
 --[[ checks whether a specified item exists in the inventory, compares only name and label --]]
-function Inventory:contains(item, minAmount)
-    return self:findIndex(item, minAmount) ~= nil
+function Inventory:contains(item, minAmount, notFull)
+    return self:findIndex(item, minAmount, notFull) ~= nil
 end
 
 --[[ checks whether a supplied item is the same as the one at the specified index --]]
