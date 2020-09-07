@@ -5,8 +5,7 @@ local modem = component.modem
 local assembler = component.assembler
 local computer = require("computer")
 
-local Server = utils.makeClass(function() 
-    local self = {}
+local Server = utils.makeClass(function(self)
     self.commands = {
         ping = self.ping
         assemblerStart = self.assemblerStart
@@ -15,8 +14,6 @@ local Server = utils.makeClass(function()
     }
 
     event.listen("modem_message", function(...) self:messageHandler(...) end)
-
-    return self
 end)
 
 function Server:messageHandler(ev, receiverAddr, senderAddr, port, distance, ...)

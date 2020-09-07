@@ -4,12 +4,9 @@ local navigation = require("navigation")
 local vec3 = require("vec3")
 local locTracker= require("locationtracker")
 
-local Charger = utils.makeClass(function(position)
-    local self = {}
+local Charger = utils.makeClass(function(self, position)
     local position = position
-
     blacklistMap[position] = true
-    return self
 end)
 
 function Charger:goTo()

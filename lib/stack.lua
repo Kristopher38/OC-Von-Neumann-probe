@@ -1,8 +1,7 @@
 local utils = require("utils")
 
-local Stack = utils.makeClass(function()
-    local self = {}
-    return self
+local Stack = utils.makeClass(function(self)
+
 end)
 
 function Stack:push(v)

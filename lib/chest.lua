@@ -11,14 +11,13 @@ local vec3 = require("vec3")
 local Block = require("block")
 local invcontroller = component.inventory_controller
 
-local Chest = utils.makeClass(function(positions, size)
+local Chest = utils.makeClass(function(self, positions, size)
     -- amount of slots which the chest has defaults to 27 * number of blocks (standard minecraft chest)
-    size = size or (utils.isInstance(positions, vec3) and 27 or #positions * 27
-    local self = utils.merge(Inventory(size), Block(positions)))
+    size = size or utils.isInstance(positions, vec3) and 27 or #positions * 27
+    self:__initBase(Inventory(size), Block(positions))
     -- automatically add chest positions to blacklist
     self:denyBreaking()
-	return self
-end, Inventory, Block)
+end)
 
 --[[ fully refreshes the internal in-memory cache of chest size and contents ]]
 function Chest:refresh()

@@ -4,11 +4,9 @@ local utils = require("utils")
 local interrupts = require("interrupts")
 local locTracker = require("locationtracker")
 
-local JobsMachine = utils.makeClass(function()
-    local self = {}
+local JobsMachine = utils.makeClass(function(self)
     self.jobs = PriorityQueue()
     self.periodics = {}
-    return self
 end)
 
 function JobsMachine:put(jobName, jobFunc, prioriy)

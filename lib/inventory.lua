@@ -1,11 +1,8 @@
 local utils = require("utils")
 
-local Inventory = utils.makeClass(function(size)
-	local self = {}
+local Inventory = utils.makeClass(function(self, size)
     self.size = size or 27 -- amount of slots which the inventory has, defaults to 27 (standard minecraft chest)
     self.slots = {} -- table with item tables at each integer slot
-
-	return self
 end)
 
 --[[ finds the first occurrence of a specified item in the inventory, returns the index at which the item was found --]]

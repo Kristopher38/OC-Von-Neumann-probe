@@ -7,8 +7,7 @@ if not modem.isWireless() then
     error("Robot requires wireless network card to function properly")
 end
 
-local BaseComputer = utils.makeClass(function()
-    local self = {}
+local BaseComputer = utils.makeClass(function(self)
     self.modemAddr = nil
     self.commsPort = 1957 -- year of von Neumann's death
     self.cmdDelay = 0.5 -- wait 10 ticks before assuming the packet got lost
@@ -17,8 +16,6 @@ local BaseComputer = utils.makeClass(function()
     self.pingCmd = "ping"
     self.assemblerStartCmd = "assemblerStart"
     self.assemblerStatusCmd = "assemblerStatus"
-
-    return self
 end)
 
 function BaseComputer:assurePortOpen()

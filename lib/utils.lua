@@ -154,37 +154,50 @@ function utils.merge(t, ...)
     local tables = table.pack(...)
     for i = 1, #tables do
         for k, v in pairs(tables[i]) do
-            if type(v) == "table" and type(t[k]) == "table" then
-                utils.merge(t[k], v)
+            if type(v) == "table" and type(rawget(t, k)) == "table" then
+                utils.merge(rawget(t, k), v)
             else
-                t[k] = _v
+                rawset(t, k, v)
             end
+        end
+        if getmetatable(t) and getmetatable(tables[i]) then
+            --utils.merge(getmetatable(t), getmetatable(tables[i]))
         end
     end
     return t
 end
 
-function utils.makeClass(constructor, ...) -- ... is a list of parent classes
+function utils.makeClass(constructor)
+    assert(type(constructor) == "function", "Class constructor has to be a function")
     local class = {}
-    local parents = table.pack(...)
     class.__index = class
-    setmetatable(class, {
-        __index = #parents == 1 and parents[1] or function(cls, k)
-            for i = 1, #parents do
-                local v = parents[i][k]
-                if v then
-                    return v
+
+    local mt = {}
+    -- set up calling the constructor when () operator is used
+    mt.__call = function(cls, ...)
+        local self = {}
+        setmetatable(self, cls)
+        constructor(self, ...)
+        return self
+    end
+
+    class.__initBase = function(self, ...)
+        local parents = table.pack(...)
+        if #parents > 0 then
+            -- set up inheritance - in case of single inheritance it uses __index pointing to another table
+            -- in case of multiple inheritance it uses __index pointing to a function which searches for a valid key in base classes
+            mt.__index = #parents == 1 and parents[1] or function(cls, k)
+                for i = 1, #parents do
+                    local v = parents[i][k]
+                    if v then
+                        return v
+                    end
                 end
             end
-        end,
-        __call = function(cls, ...)
-            assert(type(constructor) == "function", "Class constructor has to be a function")
-            local self = constructor(...)
-            assert(type(self) == "table", "Class constructor has to return a table")
-            setmetatable(self, cls)
-            return self
         end
-    })
+    end
+
+    setmetatable(class, mt)
     return class
 end
 

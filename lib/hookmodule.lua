@@ -3,16 +3,13 @@ local hookOrder = require("hookorder")
 
 local modules = {}
 
-local HookModule = utils.makeClass(function(name)
-    local self = {}
+local HookModule = utils.makeClass(function(self, name)
     self.name = name or ""
     self.originals = {}
 
     assert(utils.findIndex(hookOrder, self.name), string.format("Hook module %s not defined in hookorder.lua", self.name))
     assert(not modules[self.name], string.format("Conflicting identical hook module name: %s", self.name))
     modules[self.name] = self
-
-    return self
 end)
 
 function HookModule:hook(original, wrapper)

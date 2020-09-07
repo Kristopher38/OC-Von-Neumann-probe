@@ -10,8 +10,8 @@ local invTracker = require("inventorytracker")
 local robot = require("robot")
 local Block = require("block")
 
-local Furnace = utils.makeClass(function(position) 
-    local self = Block(position)
+local Furnace = utils.makeClass(function(self, position)
+    self:__initBase(Block(position))
     self.lastInsert = {
         fuel = nil
         raw = nil
@@ -22,9 +22,7 @@ local Furnace = utils.makeClass(function(position)
         smelted = nil
     }
     self:denyBreaking()
-
-    return self
-end, Block)
+end)
 
 Furnace.slotSides = {raw = sides.top, fuel = sides.front, smelted = sides.bottom}
 

@@ -1,11 +1,10 @@
 local utils = require("utils")
 local nav = require("navigation")
 local locTracker = require("locationtracker")
+local blacklistMap = require("blacklistmap")
 
-local Block = utils.makeClass(function(position)
-    local self = {}
+local Block = utils.makeClass(function(self, position)
     self.position = position -- can be either a vec3 or a table of vec3s, allows for multiblock blocks
-    return self
 end)
 
 function Block:goTo()
@@ -35,3 +34,5 @@ end
 function Block:allowBreaking()
     self:setBreaking(true)
 end
+
+return Block
