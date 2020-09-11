@@ -203,9 +203,9 @@ end
 
 --[[ compares two item tables, only by name and label fields if they exist in both tables describing an item --]]
 function utils.compareItems(first, second)
-    return ((first.name and second.name) and first.name == second.name or true) and
-           ((first.label and second.label) and first.label == second.label or true) and
-           ((first.damage and second.damage) and first.damage == second.damage or true)
+    return ((first.name and second.name) and first.name == second.name or not (first.name and second.name)) and
+           ((first.label and second.label) and first.label == second.label or not (first.label and second.label)) and
+           ((first.damage and second.damage) and first.damage == second.damage or not (first.damage and second.damage))
 end
 
 function utils.realTime()

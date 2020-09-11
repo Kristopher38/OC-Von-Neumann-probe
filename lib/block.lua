@@ -2,6 +2,7 @@ local utils = require("utils")
 local nav = require("navigation")
 local locTracker = require("locationtracker")
 local blacklistMap = require("blacklistmap")
+local vec3 = require("vec3")
 
 local Block = utils.makeClass(function(self, position)
     self.position = position -- can be either a vec3 or a table of vec3s, allows for multiblock blocks
@@ -12,8 +13,8 @@ function Block:goTo()
 end
 
 function Block:relativeSide()
-    local adjacentBlock = utils.isInstance(position, vec3) and position or nav.adjacentBlock(locTracker.position, self.position)
-    assert(adjacentBlock, "Robot is not adjacent to the chest")
+    local adjacentBlock = utils.isInstance(self.position, vec3) and self.position or nav.adjacentBlock(locTracker.position, self.position)
+    assert(adjacentBlock, "Robot is not adjacent to a block")
     return nav.relativeSide(locTracker.position, adjacentBlock)
 end
 

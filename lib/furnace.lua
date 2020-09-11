@@ -9,13 +9,15 @@ local locTracker = require("locationtracker")
 local invTracker = require("inventorytracker")
 local robot = require("robot")
 local Block = require("block")
+local sides = require("sides")
+local computer = require("computer")
 
 local Furnace = utils.makeClass(function(self, position)
     self:__initBase(Block(position))
-    self.lastInsert = {
-        fuel = nil
-        raw = nil
-    }
+    self.lastInsert = computer.uptime()
+    self.lastUpdate = computer.uptime()
+    self.smeltingTicksLeft = 0
+    self.fuelTicksLeft = 0
     self.slots = {
         fuel = nil,
         raw = nil,
@@ -28,11 +30,29 @@ Furnace.slotSides = {raw = sides.top, fuel = sides.front, smelted = sides.bottom
 
 --[[ estimates how much time is left to smelt specified amount of items, or all items if not specified --]]
 function Furnace:timeLeft(amount)
-    local elapsedTicks = (computer.uptime() - self.lastFuelInsert) * 20 -- 20 ticks per 1 second
-    
+    return 0
+end
+
+function Furnace:updateProgress()
+    local deltaTicks = (computer.uptime() - (self.lastInsert > self.lastUpdate and self.lastInsert or self.lastUpdate)) * 20 -- 20 ticks per 1 second
+    self.fuel.size = self.fuel.size - deltaTicks // burntimes[self.fuel.name]
+    if self.fuel.size <= 0 then
+        self.fuel = nil
+    end
+    self.raw.size = self.raw.size - deltaTicks // 200 -- smelting one item takes 200 ticks
+    if self.raw.size <= 0 then
+        self.raw = nil
+    end
+    if not self.smelted then
+        self.smelted = {
+            size = 0
+        }
+    end
+    self.smelted.size = self.smelted.size + deltaTicks // 200
 end
 
 function Furnace:put(itemOrIndex, amount, slotType)
+    amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
     local amountTransfered = 0
     while amount > 0 do
         local index
@@ -44,17 +64,21 @@ function Furnace:put(itemOrIndex, amount, slotType)
             break
         end
 
-        local item = utils.deepCopy(invTracker.inventory.slots[index])
-        if self:timeLeft() <= 0 or utils.compareItems(item, self.slots[slotType]) then
-            robot.select(index)
-            local beforeSize = robot.count()
-            invcontroller.dropIntoSlot(self:relativeSide(), 1, amount, self.slotSides[slotType])
-            local deltaSize = beforeSize - robot.count()
-            amount = amount - deltaSize
-            amountTransfered = amountTransfered + deltaSize
+        if index then
+            local item = utils.deepCopy(invTracker.inventory.slots[index])
+            if self:timeLeft() <= 0 or utils.compareItems(item, self.slots[slotType]) then
+                robot.select(index)
+                local beforeSize = robot.count()
+                invcontroller.dropIntoSlot(self:relativeSide(), 1, amount, self.slotSides[slotType])
+                local deltaSize = beforeSize - robot.count()
+                amount = amount - deltaSize
+                amountTransfered = amountTransfered + deltaSize
 
-            self.lastInsert[slotType] = computer.uptime()
-            self.slots[slotType] = item
+                self.lastInsert = computer.uptime()
+                self.slots[slotType] = item
+            else
+                break
+            end
         else
             break
         end
@@ -63,7 +87,8 @@ function Furnace:put(itemOrIndex, amount, slotType)
 end
 
 function Furnace:take(amount, slotType)
-    local taken = invcontroller.suckFromSlot(self:relativeSide(), amount, self.slotSides[slotType])
+    amount = amount or ((type(itemOrIndex) == "table" and itemOrIndex.size ~= nil) and itemOrIndex.size or 1)
+    local taken = invcontroller.suckFromSlot(self:relativeSide(), 1, amount, self.slotSides[slotType])
     if taken > 0 then
         local slot = self.slots[slotType]
         slot.size = slot.size - taken
