@@ -32,8 +32,12 @@ function vec3.round(self)
 	return vec3(utils.round(self.x), utils.round(self.y), utils.round(self.z))
 end
 
+function vec3.unpack(self)
+    return self.x, self.y, self.z
+end
+
 function vec3.tovec3(str)
-	local vector = vec3(string.match(str, "%[(%-?%d+%.?%d-), (%d+%.?%d-), (%-?%d+%.?%d-)%]"))
+	local vector = vec3(string.match(str, "%[(%-?%d+%.?%d-), (%-?%d+%.?%d-), (%-?%d+%.?%d-)%]"))
 	vector.x = tonumber(vector.x)
 	vector.y = tonumber(vector.y)
 	vector.z = tonumber(vector.z)
