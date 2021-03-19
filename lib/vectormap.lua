@@ -5,17 +5,12 @@ local inspect = require("inspect")
 
 local VectorMap = {}
 VectorMap.__index = VectorMap
-VectorMap.fileHeader = "<c4lllc1"
-VectorMap.magicString = "CHNK"
-VectorMap.extension = "chnk"
-VectorMap.chunkFolder= "/home/chunks/"
-setmetatable(VectorMap, {__call = function(cls, packValues, allowFloats, chunkSize, storedType)
+setmetatable(VectorMap, {__call = function(cls, packValues, allowFloats, chunkSize)
 	local self = {}
 	self.chunks = {}
 	self.packValues = packValues or false
 	self.allowFloats = allowFloats or false
 	self.chunkSize = chunkSize or vec3(4096, 256, 4096)
-	self.storedType = storedType or "f"
 	-- order is important since we're overriding __newindex method!
 	-- setmetatable has to be called after setting fields
 	setmetatable(self, cls) -- cls is current table: VectorMap
@@ -45,10 +40,10 @@ local function unpackxyz(number)
 	return string.unpack("<lll", number)
 end
 
-function VectorMap:getHashAndLocalCoords(vector)
+function VectorMap:getHashAndLocalCoords(vector, createChunk)
 	local x, y, z = offsetFromAbsolute(vector, self.chunkSize)
 	local chunkHash = packxyz(x, y, z)
-	if self.chunks[chunkHash] == nil then
+	if self.chunks[chunkHash] == nil and createChunk then
 		self.chunks[chunkHash] = VectorChunk(self.packValues, self.allowFloats, vec3(0, 0, 0))
 	end
 	local localx, localy, localz = localFromAbsolute(vector, self.chunkSize)
@@ -76,74 +71,18 @@ function VectorMap:atIndex(index)
 end
 
 function VectorMap:set(vector, element)
-	local chunkHash, x, y, z = self:getHashAndLocalCoords(vector)
+	local chunkHash, x, y, z = self:getHashAndLocalCoords(vector, true)
 	self.chunks[chunkHash]:setxyz(x, y, z, element)
 end
 
 function VectorMap:setIndex(index, vector)
 	if vector then
-		local chunkHash, x, y, z = self:getHashAndLocalCoords(vector)
+		local chunkHash, x, y, z = self:getHashAndLocalCoords(vector, true)
 		self.chunks[chunkHash]:setIndexXyz(index, x, y, z)
 	else
 		vector = self:atIndex(index)
-		local chunkHash = self:getHashAndLocalCoords(vector)
+		local chunkHash = self:getHashAndLocalCoords(vector, true)
 		self.chunks[chunkHash]:setIndex(index, nil)
-	end
-end
-
-function VectorMap:getPackFormat(dataFormat)
-	return "<" .. dataFormat
-end
-
-function VectorMap:getFileName(chunkCoords)
-	return self.chunkFolder .. tostring(chunkCoords) .. "." .. self.extension
-end
-
-function VectorMap:saveChunk(coords)
-	local chunkCoords = vec3(offsetFromAbsolute(coords, self.chunkSize))
-	local chunkHash = packxyz(chunkCoords.x, chunkCoords.y, chunkCoords.z)
-	local data = string.pack(self.fileHeader, self.magicString, self.chunkSize.x, self.chunkSize.y, self.chunkSize.z, self.storedType)
-	local packFormat = self:getPackFormat(self.storedType)
-	for x = 0, self.chunkSize.x - 1 do
-		for y = 0, self.chunkSize.y - 1 do
-			for z = 0, self.chunkSize.z - 1 do
-				local block = self.chunks[chunkHash]:atxyz(x, y, z)
-				data = data .. string.pack(packFormat, block and block or -1)
-			end
-		end
-	end
-	
-	local filePath = self:getFileName(chunkCoords)
-	local chunkFile = io.open(filePath, "w")
-	chunkFile:write(data)
-	chunkFile:close()
-end
-
-function VectorMap:loadChunk(coords)
-	local chunkCoords = vec3(offsetFromAbsolute(coords, self.chunkSize))
-	local chunkHash = packxyz(chunkCoords.x, chunkCoords.y, chunkCoords.z)
-	local filePath = self:getFileName(chunkCoords)
-	local chunkFile = io.open(filePath, "r")
-	
-	if io.type(chunkFile) == "file" then
-		local magicString, chunkSizex, chunkSizey, chunkSizez, dataFormat = string.unpack(self.fileHeader, chunkFile:read(8))
-
-		if magicString == self.magicString and
-		chunkSizex == self.chunkSize.x and 
-		chunkSizey == self.chunkSize.y and 
-		chunkSizez == self.chunkSize.z then
-			local packFormat = self:getPackFormat(dataFormat)
-			local formatSize = string.packsize(packFormat)
-			
-			for x = 0, self.chunkSize.x - 1 do
-				for y = 0, self.chunkSize.y - 1 do
-					for z = 0, self.chunkSize.z - 1 do
-						local block = string.unpack(packFormat, chunkFile:read(formatSize))
-						self.chunks[chunkHash]:setxyz(x, y, z, block ~= -1 and block or nil)
-					end
-				end
-			end
-		end
 	end
 end
 
