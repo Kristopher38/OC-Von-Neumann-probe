@@ -22,6 +22,7 @@ end })
 
 function Logger:setLevel(level)
     self.level = level
+    return self
 end
 
 function Logger:formatDate(time)
@@ -31,6 +32,7 @@ end
 
 function Logger:addHandler(handler)
     table.insert(self.handlers, handler)
+    return self
 end
 
 function Logger:removeHandler(handler)
@@ -40,6 +42,7 @@ function Logger:removeHandler(handler)
             break
         end
     end
+    return self
 end
 
 function Logger:hasHandlers()
@@ -53,6 +56,7 @@ function Logger:log(level, msg, ...)
             handler:log(level, formatted)
         end
     end
+    return self
 end
 
 function Logger:debug(msg, ...)
