@@ -23,14 +23,7 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [x] Going between and mining ore lumps
   - [ ] Unloading mined resources at the base
   - [ ] Pathfinding to a new, unvisited chunk, scanning it before moving into it
-- [ ] Rare resource and biome searching
-  - [ ] Determine what the search area should be for each type of resource
-  - [ ] Calculating and preparing amount of fuel required for a long journey
-  - [ ] Algorithms for searching a biome and acquiring each resource (some of them can be detected using structure recognizer algorithm)
-    - [ ] Desert/cactus
-    - [ ] River/sugar cane
-    - [ ] River/clay
-    - [ ] Mountains/emerald
+  - [ ] Finding mountains to acquire emeralds
 - [ ] Keeping track of inventories and crafting
   - [x] Tracking robot's inventory changes by hooking to component methods
   - [x] Tracking base's chests' inventories, with their location
@@ -39,11 +32,10 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
   - [ ] Storage and retrieval of crafting recipes with some data structure
   - [ ] Crafting through standardized API without crafting area preparations (only making sure the robot has enough ingredients for crafting the desired recipe and amount of items
 - [ ] Tree chopping
-  - [ ] Recognizing trees from map data with structure recognizer algorithm
+  - [ ] Recognizing trees from map data
   - [ ] Chopping trees efficiently, similar to how ore mining works
 - [ ] Farming crops required for making a copy
-  - [ ] Acquiring cacti and sugar canes
-  - [ ] Choosing appropriate area for a farm field
+  - [ ] Choosing/building appropriate area for a farm field
   - [ ] Making an efficient farming pattern and planting crops
   - [ ] Estimating how much time will it take for the crops to grow
   - [ ] Checking crop growth periodically when the robot is near and on the surface
@@ -53,7 +45,8 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
 
 ## Rough algorithm
 ### Primary goal
-1. Searching for a biome with trees and harvesting resources
+0. Robot starts with a base consisting of one computer, a generator and a charging pad, and at least one sugar cane, one sapling and one cactus
+1. Planting/searching for trees and harvesting resources
     - at least 41 logs
     - a few saplings for a tree farm
     - a few extra logs to make new tools
@@ -65,21 +58,20 @@ This is a project aiming to create a self-replicating robot, or a [Von Neumann P
     - diamonds
     - cobblestone
 3. Smelting ores to ingots and crafting 2 buckets
-4. Finding lava (in existing visited chunk's data) and getting 2 lava buckets
-5. Searching for a river and harvesting resources from it
-    - clay
-    - sugar cane
-    - sand
-    - obsidian (made with buckets of lava)
-    - 2 buckets of water
-6. Setting up sugarcane farm
+4. Setting up sugarcane farm
     - making infinite water supply
     - making checkerboard pattern
-    - planting sugarcane, in the final stage at least 31 blocks
-7. Searching for specific biomes and harvesting resources
-    - desert: min. 2 cacti
+    - planting plants, in the final stage sugarcane should grow least 45 blocks
+5. Finding lava (in existing visited chunk's data) and getting 2 lava buckets
+6. Searching for a river and harvesting resources from it
+    - clay
+    - sand (for crafting and farms)
+    - obsidian (made with buckets of lava)
+    - 2 buckets of water
+7. Setting up cactus farm in the same manner as sugarcane farm
+8. Searching for specific biomes and harvesting resources
     - mountains: 3 emeralds
-8. Robot assembly
+9. Robot assembly
     - crafting parts
     - writing software to disk
     - putting parts in the assembler and starting the assembly
